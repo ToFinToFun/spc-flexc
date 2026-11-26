@@ -848,7 +848,7 @@
     },
     "get_unknown_cards": {
       "name": "Läs okända kort",
-      "description": "Läser kort som centralen har sett men inte känner till. ",
+      "description": "Läser kort som centralen har sett men inte känner till.",
       "fields": {
         "config_entry_id": {
           "name": "Central",

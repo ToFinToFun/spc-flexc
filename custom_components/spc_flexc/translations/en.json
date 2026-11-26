@@ -848,7 +848,7 @@
     },
     "get_unknown_cards": {
       "name": "Read unknown cards",
-      "description": "Reads the cards the panel saw but does not know. ",
+      "description": "Reads the cards the panel saw but does not know.",
       "fields": {
         "config_entry_id": {
           "name": "Panel",
