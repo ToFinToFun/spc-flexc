@@ -8,6 +8,16 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.6] - 2026-11-26
+
+### Changed
+
+- System alert names are the panel's own, in English and Swedish, as on its
+  *Status → System Alerts* page (for example *Controller Mains Fault* /
+  *Centralapparat, nätspänningsfel*, *Code Tamper* / *Kod försök*); the
+  inhibit and isolate switches and the SPC FlexC System card follow (card
+  1.2.13).
+
 ## [2.0.0-beta.5] - 2026-11-26
 
 ### Changed

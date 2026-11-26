@@ -127,7 +127,12 @@ global ID (`0` = local); not confirmed.
 4. A capabilities view listing every function as: works; untested; not
    allowed in the Command Profile; needs the engineer login; not built;
    hardware missing.
-5. Upstream: offer the protocol fixes (handshake account echo, chunked reply
+5. Three system alerts that the panel's status page lists are not mapped to a
+   `SYSALERT` bit yet: *User Duress*, *User RF FOB Panic* and *Wireless Two Way
+   Devices Require Relearning*.
+6. Detector type of wireless zones (*Magnetic contact*, *Smoke detector*, *PIR*):
+   the panel's web page shows it, but no FlexC command reports it so far.
+7. Upstream: offer the protocol fixes (handshake account echo, chunked reply
    acknowledgement) to [minimicro34/ha-spc-flexc](https://github.com/minimicro34/ha-spc-flexc).
 
 Not planned without a backup and great care, because they can switch FlexC

@@ -110,55 +110,55 @@
         "name": "Door {door_id} {door_name} – Door contact (DPS)"
       },
       "system_alert_mains_fault": {
-        "name": "System alert: Mains fault"
+        "name": "System alert: Controller Mains Fault"
       },
       "system_alert_battery_fault": {
-        "name": "System alert: Battery fault"
+        "name": "System alert: Controller Battery Fault"
       },
       "system_alert_psu_fault": {
-        "name": "System alert: PSU fault"
+        "name": "System alert: Controller PSU Fault"
       },
       "system_alert_aux_fuse_fault": {
-        "name": "System alert: Aux fuse fault"
+        "name": "System alert: Controller Aux. Fuse Fault"
       },
       "system_alert_external_bell_fuse_fault": {
-        "name": "System alert: External bell fuse fault"
+        "name": "System alert: Controller External Bell Fuse Fault"
       },
       "system_alert_internal_bell_fuse_fault": {
-        "name": "System alert: Internal bell fuse fault"
+        "name": "System alert: Controller Internal Bell Fuse Fault"
       },
       "system_alert_bell_tamper": {
-        "name": "System alert: Bell tamper"
+        "name": "System alert: Bell Tamper"
       },
       "system_alert_cabinet_tamper": {
-        "name": "System alert: Cabinet tamper"
+        "name": "System alert: Controller Cabinet Tamper"
       },
       "system_alert_aux_tamper_1": {
-        "name": "System alert: Aux tamper 1"
+        "name": "System alert: Controller Aux. Tamper 1"
       },
       "system_alert_aux_tamper_2": {
-        "name": "System alert: Aux tamper 2"
+        "name": "System alert: Controller Aux. Tamper 2"
       },
       "system_alert_antenna_tamper": {
-        "name": "System alert: Antenna tamper"
+        "name": "System alert: Controller Antenna Tamper"
       },
       "system_alert_rf_jamming": {
-        "name": "System alert: RF jamming"
+        "name": "System alert: Controller RF Jamming"
       },
       "system_alert_fail_to_communicate": {
         "name": "System alert: Fail to communicate"
       },
       "system_alert_xbus_cable_fault": {
-        "name": "System alert: X-BUS cable fault"
+        "name": "System alert: X-BUS Cable Fault"
       },
       "system_alert_code_tamper": {
-        "name": "System alert: Code tamper"
+        "name": "System alert: Code Tamper"
       },
       "system_alert_ethernet_link": {
-        "name": "System alert: Ethernet link fault"
+        "name": "System alert: Ethernet link"
       },
       "system_alert_network_fault": {
-        "name": "System alert: Network fault"
+        "name": "System alert: Network Fault"
       },
       "ethernet": {
         "name": "Ethernet"
@@ -389,76 +389,76 @@
         "name": "Engineer mode control"
       },
       "system_alert_mains_fault_inhibit": {
-        "name": "Inhibit: Mains fault"
+        "name": "Inhibit: Controller Mains Fault"
       },
       "system_alert_mains_fault_isolate": {
-        "name": "Isolate: Mains fault"
+        "name": "Isolate: Controller Mains Fault"
       },
       "system_alert_battery_fault_inhibit": {
-        "name": "Inhibit: Battery fault"
+        "name": "Inhibit: Controller Battery Fault"
       },
       "system_alert_battery_fault_isolate": {
-        "name": "Isolate: Battery fault"
+        "name": "Isolate: Controller Battery Fault"
       },
       "system_alert_psu_fault_inhibit": {
-        "name": "Inhibit: PSU fault"
+        "name": "Inhibit: Controller PSU Fault"
       },
       "system_alert_psu_fault_isolate": {
-        "name": "Isolate: PSU fault"
+        "name": "Isolate: Controller PSU Fault"
       },
       "system_alert_aux_fuse_fault_inhibit": {
-        "name": "Inhibit: Aux fuse fault"
+        "name": "Inhibit: Controller Aux. Fuse Fault"
       },
       "system_alert_aux_fuse_fault_isolate": {
-        "name": "Isolate: Aux fuse fault"
+        "name": "Isolate: Controller Aux. Fuse Fault"
       },
       "system_alert_external_bell_fuse_fault_inhibit": {
-        "name": "Inhibit: External bell fuse fault"
+        "name": "Inhibit: Controller External Bell Fuse Fault"
       },
       "system_alert_external_bell_fuse_fault_isolate": {
-        "name": "Isolate: External bell fuse fault"
+        "name": "Isolate: Controller External Bell Fuse Fault"
       },
       "system_alert_internal_bell_fuse_fault_inhibit": {
-        "name": "Inhibit: Internal bell fuse fault"
+        "name": "Inhibit: Controller Internal Bell Fuse Fault"
       },
       "system_alert_internal_bell_fuse_fault_isolate": {
-        "name": "Isolate: Internal bell fuse fault"
+        "name": "Isolate: Controller Internal Bell Fuse Fault"
       },
       "system_alert_bell_tamper_inhibit": {
-        "name": "Inhibit: Bell tamper"
+        "name": "Inhibit: Bell Tamper"
       },
       "system_alert_bell_tamper_isolate": {
-        "name": "Isolate: Bell tamper"
+        "name": "Isolate: Bell Tamper"
       },
       "system_alert_cabinet_tamper_inhibit": {
-        "name": "Inhibit: Cabinet tamper"
+        "name": "Inhibit: Controller Cabinet Tamper"
       },
       "system_alert_cabinet_tamper_isolate": {
-        "name": "Isolate: Cabinet tamper"
+        "name": "Isolate: Controller Cabinet Tamper"
       },
       "system_alert_aux_tamper_1_inhibit": {
-        "name": "Inhibit: Aux tamper 1"
+        "name": "Inhibit: Controller Aux. Tamper 1"
       },
       "system_alert_aux_tamper_1_isolate": {
-        "name": "Isolate: Aux tamper 1"
+        "name": "Isolate: Controller Aux. Tamper 1"
       },
       "system_alert_aux_tamper_2_inhibit": {
-        "name": "Inhibit: Aux tamper 2"
+        "name": "Inhibit: Controller Aux. Tamper 2"
       },
       "system_alert_aux_tamper_2_isolate": {
-        "name": "Isolate: Aux tamper 2"
+        "name": "Isolate: Controller Aux. Tamper 2"
       },
       "system_alert_antenna_tamper_inhibit": {
-        "name": "Inhibit: Antenna tamper"
+        "name": "Inhibit: Controller Antenna Tamper"
       },
       "system_alert_antenna_tamper_isolate": {
-        "name": "Isolate: Antenna tamper"
+        "name": "Isolate: Controller Antenna Tamper"
       },
       "system_alert_rf_jamming_inhibit": {
-        "name": "Inhibit: RF jamming"
+        "name": "Inhibit: Controller RF Jamming"
       },
       "system_alert_rf_jamming_isolate": {
-        "name": "Isolate: RF jamming"
+        "name": "Isolate: Controller RF Jamming"
       },
       "system_alert_fail_to_communicate_inhibit": {
         "name": "Inhibit: Fail to communicate"
@@ -467,28 +467,28 @@
         "name": "Isolate: Fail to communicate"
       },
       "system_alert_xbus_cable_fault_inhibit": {
-        "name": "Inhibit: X-BUS cable fault"
+        "name": "Inhibit: X-BUS Cable Fault"
       },
       "system_alert_xbus_cable_fault_isolate": {
-        "name": "Isolate: X-BUS cable fault"
+        "name": "Isolate: X-BUS Cable Fault"
       },
       "system_alert_code_tamper_inhibit": {
-        "name": "Inhibit: Code tamper"
+        "name": "Inhibit: Code Tamper"
       },
       "system_alert_code_tamper_isolate": {
-        "name": "Isolate: Code tamper"
+        "name": "Isolate: Code Tamper"
       },
       "system_alert_ethernet_link_inhibit": {
-        "name": "Inhibit: Ethernet link fault"
+        "name": "Inhibit: Ethernet link"
       },
       "system_alert_ethernet_link_isolate": {
-        "name": "Isolate: Ethernet link fault"
+        "name": "Isolate: Ethernet link"
       },
       "system_alert_network_fault_inhibit": {
-        "name": "Inhibit: Network fault"
+        "name": "Inhibit: Network Fault"
       },
       "system_alert_network_fault_isolate": {
-        "name": "Isolate: Network fault"
+        "name": "Isolate: Network Fault"
       },
       "mapping_gate": {
         "name": "Mapping gate {mg_id} {mg_name}"

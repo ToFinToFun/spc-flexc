@@ -110,7 +110,7 @@
         "name": "Dörr {door_id} {door_name} – Dörrkontakt (DPS)"
       },
       "system_alert_mains_fault": {
-        "name": "Systemlarm: Fel 230V AC"
+        "name": "Systemlarm: Centralapparat, nätspänningsfel"
       },
       "system_alert_battery_fault": {
         "name": "Systemlarm: Centralapparat, batterifel"
@@ -119,25 +119,25 @@
         "name": "Systemlarm: Centralapparat, fel på PSU-enhet"
       },
       "system_alert_aux_fuse_fault": {
-        "name": "Systemlarm: AUX-utgång, säkring"
+        "name": "Systemlarm: Centralapparat, fel på säkring till AUX-utgång"
       },
       "system_alert_external_bell_fuse_fault": {
-        "name": "Systemlarm: Extern siren säkring"
+        "name": "Systemlarm: Centralapparat, fel på säkring till extern siren"
       },
       "system_alert_internal_bell_fuse_fault": {
-        "name": "Systemlarm: Intern siren säkring"
+        "name": "Systemlarm: Centralapparat, fel på säkring till intern siren"
       },
       "system_alert_bell_tamper": {
         "name": "Systemlarm: Sirensabotage"
       },
       "system_alert_cabinet_tamper": {
-        "name": "Systemlarm: Kapslingssabotage"
+        "name": "Systemlarm: Centralapparat, kapslingsabotage"
       },
       "system_alert_aux_tamper_1": {
-        "name": "Systemlarm: Aux. Sabotage 1"
+        "name": "Systemlarm: Centralapparat, AUX-utgång sabotage 1"
       },
       "system_alert_aux_tamper_2": {
-        "name": "Systemlarm: Aux. Sabotage 2"
+        "name": "Systemlarm: Centralapparat, AUX-utgång sabotage 2"
       },
       "system_alert_antenna_tamper": {
         "name": "Systemlarm: Antennsabotage"
@@ -149,10 +149,10 @@
         "name": "Systemlarm: Kommunikationsfel"
       },
       "system_alert_xbus_cable_fault": {
-        "name": "Systemlarm: X-BUS KABEL Fel"
+        "name": "Systemlarm: X-BUS-kabelfel"
       },
       "system_alert_code_tamper": {
-        "name": "Systemlarm: ANV KOD SAB"
+        "name": "Systemlarm: Kod försök"
       },
       "system_alert_ethernet_link": {
         "name": "Systemlarm: Ethernet länk"
@@ -389,10 +389,10 @@
         "name": "Styr installatörsläge"
       },
       "system_alert_mains_fault_inhibit": {
-        "name": "Spärra: Fel 230V AC"
+        "name": "Spärra: Centralapparat, nätspänningsfel"
       },
       "system_alert_mains_fault_isolate": {
-        "name": "Isolera: Fel 230V AC"
+        "name": "Isolera: Centralapparat, nätspänningsfel"
       },
       "system_alert_battery_fault_inhibit": {
         "name": "Spärra: Centralapparat, batterifel"
@@ -407,22 +407,22 @@
         "name": "Isolera: Centralapparat, fel på PSU-enhet"
       },
       "system_alert_aux_fuse_fault_inhibit": {
-        "name": "Spärra: AUX-utgång, säkring"
+        "name": "Spärra: Centralapparat, fel på säkring till AUX-utgång"
       },
       "system_alert_aux_fuse_fault_isolate": {
-        "name": "Isolera: AUX-utgång, säkring"
+        "name": "Isolera: Centralapparat, fel på säkring till AUX-utgång"
       },
       "system_alert_external_bell_fuse_fault_inhibit": {
-        "name": "Spärra: Extern siren säkring"
+        "name": "Spärra: Centralapparat, fel på säkring till extern siren"
       },
       "system_alert_external_bell_fuse_fault_isolate": {
-        "name": "Isolera: Extern siren säkring"
+        "name": "Isolera: Centralapparat, fel på säkring till extern siren"
       },
       "system_alert_internal_bell_fuse_fault_inhibit": {
-        "name": "Spärra: Intern siren säkring"
+        "name": "Spärra: Centralapparat, fel på säkring till intern siren"
       },
       "system_alert_internal_bell_fuse_fault_isolate": {
-        "name": "Isolera: Intern siren säkring"
+        "name": "Isolera: Centralapparat, fel på säkring till intern siren"
       },
       "system_alert_bell_tamper_inhibit": {
         "name": "Spärra: Sirensabotage"
@@ -431,22 +431,22 @@
         "name": "Isolera: Sirensabotage"
       },
       "system_alert_cabinet_tamper_inhibit": {
-        "name": "Spärra: Kapslingssabotage"
+        "name": "Spärra: Centralapparat, kapslingsabotage"
       },
       "system_alert_cabinet_tamper_isolate": {
-        "name": "Isolera: Kapslingssabotage"
+        "name": "Isolera: Centralapparat, kapslingsabotage"
       },
       "system_alert_aux_tamper_1_inhibit": {
-        "name": "Spärra: Aux. Sabotage 1"
+        "name": "Spärra: Centralapparat, AUX-utgång sabotage 1"
       },
       "system_alert_aux_tamper_1_isolate": {
-        "name": "Isolera: Aux. Sabotage 1"
+        "name": "Isolera: Centralapparat, AUX-utgång sabotage 1"
       },
       "system_alert_aux_tamper_2_inhibit": {
-        "name": "Spärra: Aux. Sabotage 2"
+        "name": "Spärra: Centralapparat, AUX-utgång sabotage 2"
       },
       "system_alert_aux_tamper_2_isolate": {
-        "name": "Isolera: Aux. Sabotage 2"
+        "name": "Isolera: Centralapparat, AUX-utgång sabotage 2"
       },
       "system_alert_antenna_tamper_inhibit": {
         "name": "Spärra: Antennsabotage"
@@ -467,16 +467,16 @@
         "name": "Isolera: Kommunikationsfel"
       },
       "system_alert_xbus_cable_fault_inhibit": {
-        "name": "Spärra: X-BUS KABEL Fel"
+        "name": "Spärra: X-BUS-kabelfel"
       },
       "system_alert_xbus_cable_fault_isolate": {
-        "name": "Isolera: X-BUS KABEL Fel"
+        "name": "Isolera: X-BUS-kabelfel"
       },
       "system_alert_code_tamper_inhibit": {
-        "name": "Spärra: ANV KOD SAB"
+        "name": "Spärra: Kod försök"
       },
       "system_alert_code_tamper_isolate": {
-        "name": "Isolera: ANV KOD SAB"
+        "name": "Isolera: Kod försök"
       },
       "system_alert_ethernet_link_inhibit": {
         "name": "Spärra: Ethernet länk"

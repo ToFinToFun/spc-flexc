@@ -30,7 +30,7 @@ const SPC_SYSTEM_TEXT = {
     },
 
     kinds: { zone: "Sektion", xbus: "X-BUS", system_alert: "Systemlarm" },
-    alertNames: {"mains_fault": "Fel 230V AC", "battery_fault": "Centralapparat, batterifel", "psu_fault": "Centralapparat, fel på PSU-enhet", "aux_fuse_fault": "AUX-utgång, säkring", "external_bell_fuse_fault": "Extern siren säkring", "internal_bell_fuse_fault": "Intern siren säkring", "bell_tamper": "Sirensabotage", "cabinet_tamper": "Kapslingssabotage", "aux_tamper_1": "Aux. Sabotage 1", "aux_tamper_2": "Aux. Sabotage 2", "antenna_tamper": "Antennsabotage", "rf_jamming": "RF Störning", "fail_to_communicate": "Kommunikationsfel", "xbus_cable_fault": "X-BUS KABEL Fel", "code_tamper": "ANV KOD SAB", "ethernet_link": "Ethernet länk", "network_fault": "Nätverksfel"},
+    alertNames: {"mains_fault": "Centralapparat, nätspänningsfel", "battery_fault": "Centralapparat, batterifel", "psu_fault": "Centralapparat, fel på PSU-enhet", "aux_fuse_fault": "Centralapparat, fel på säkring till AUX-utgång", "external_bell_fuse_fault": "Centralapparat, fel på säkring till extern siren", "internal_bell_fuse_fault": "Centralapparat, fel på säkring till intern siren", "bell_tamper": "Sirensabotage", "cabinet_tamper": "Centralapparat, kapslingsabotage", "aux_tamper_1": "Centralapparat, AUX-utgång sabotage 1", "aux_tamper_2": "Centralapparat, AUX-utgång sabotage 2", "antenna_tamper": "Antennsabotage", "rf_jamming": "RF Störning", "fail_to_communicate": "Kommunikationsfel", "xbus_cable_fault": "X-BUS-kabelfel", "code_tamper": "Kod försök", "ethernet_link": "Ethernet länk", "network_fault": "Nätverksfel"},
     xbusFaults: {"tamper": "Sabotage", "mains_fault": "Nätspänningsfel"},
     status: {
       works: "Fungerar", untested: "Otestad", not_built: "Inte byggd", no_hardware: "Hårdvara saknas",
@@ -64,7 +64,7 @@ const SPC_SYSTEM_TEXT = {
     },
 
     kinds: { zone: "Zone", xbus: "X-BUS", system_alert: "System alert" },
-    alertNames: {"mains_fault": "Mains fault", "battery_fault": "Battery fault", "psu_fault": "PSU fault", "aux_fuse_fault": "Aux fuse fault", "external_bell_fuse_fault": "External bell fuse fault", "internal_bell_fuse_fault": "Internal bell fuse fault", "bell_tamper": "Bell tamper", "cabinet_tamper": "Cabinet tamper", "aux_tamper_1": "Aux tamper 1", "aux_tamper_2": "Aux tamper 2", "antenna_tamper": "Antenna tamper", "rf_jamming": "RF jamming", "fail_to_communicate": "Fail to communicate", "xbus_cable_fault": "X-BUS cable fault", "code_tamper": "Code tamper", "ethernet_link": "Ethernet link fault", "network_fault": "Network fault"},
+    alertNames: {"mains_fault": "Controller Mains Fault", "battery_fault": "Controller Battery Fault", "psu_fault": "Controller PSU Fault", "aux_fuse_fault": "Controller Aux. Fuse Fault", "external_bell_fuse_fault": "Controller External Bell Fuse Fault", "internal_bell_fuse_fault": "Controller Internal Bell Fuse Fault", "bell_tamper": "Bell Tamper", "cabinet_tamper": "Controller Cabinet Tamper", "aux_tamper_1": "Controller Aux. Tamper 1", "aux_tamper_2": "Controller Aux. Tamper 2", "antenna_tamper": "Controller Antenna Tamper", "rf_jamming": "Controller RF Jamming", "fail_to_communicate": "Fail to communicate", "xbus_cable_fault": "X-BUS Cable Fault", "code_tamper": "Code Tamper", "ethernet_link": "Ethernet link", "network_fault": "Network Fault"},
     xbusFaults: {"tamper": "Tamper", "mains_fault": "Mains fault"},
     status: {
       works: "Works", untested: "Untested", not_built: "Not built", no_hardware: "No hardware",
