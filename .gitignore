@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.coverage
+htmlcov/
+tools/
+.vscode/
+.claude/settings.local.json
+.venv/
+
+# Local only: owner notes, handover, test plans
+local/
+CLAUDE.local.md
+node_modules/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

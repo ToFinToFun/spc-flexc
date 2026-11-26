@@ -1,0 +1,780 @@
+get_log:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    log:
+      required: true
+      selector:
+        select:
+          translation_key: log
+          options:
+            - access
+            - system
+            - zone
+            - ats
+            - ats_network
+            - atp
+            - atp_network
+            - wireless
+    id:
+      required: false
+      example: 3
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+    atp:
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 16
+          mode: box
+    limit:
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 2000
+          mode: box
+set_clock:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+clear_alerts:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+engineer_login:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    username:
+      required: true
+      selector:
+        text:
+    password:
+      required: true
+      selector:
+        text:
+          type: password
+    remember:
+      required: false
+      default: false
+      selector:
+        boolean:
+engineer_logout:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+set_engineer_mode:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    enter:
+      required: true
+      selector:
+        boolean:
+set_calendar_week:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    calendar_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 64
+          mode: box
+    week_type:
+      required: true
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 3
+          mode: box
+    mon:
+      example: "06:00;23:00"
+      selector:
+        text:
+    tue:
+      selector:
+        text:
+    wed:
+      selector:
+        text:
+    thu:
+      selector:
+        text:
+    fri:
+      selector:
+        text:
+    sat:
+      selector:
+        text:
+    sun:
+      selector:
+        text:
+set_calendar:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    calendar_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 64
+          mode: box
+    name:
+      required: false
+      selector:
+        text:
+    week_types:
+      required: false
+      example: "11111222221111"
+      selector:
+        text:
+edit_user:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+    name:
+      required: false
+      selector:
+        text:
+    profiles:
+      required: false
+      example: "[1, 2]"
+      selector:
+        object:
+    valid_from:
+      required: false
+      selector:
+        date:
+    valid_until:
+      required: false
+      selector:
+        date:
+    no_date_limit:
+      required: false
+      selector:
+        boolean:
+    card_number:
+      required: false
+      selector:
+        text:
+    language:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    card_blocked:
+      required: false
+      selector:
+        boolean:
+    extended_time:
+      required: false
+      selector:
+        boolean:
+    pin_bypass:
+      required: false
+      selector:
+        boolean:
+    priority:
+      required: false
+      selector:
+        boolean:
+    escort:
+      required: false
+      selector:
+        boolean:
+    custodian:
+      required: false
+      selector:
+        boolean:
+add_user:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+    name:
+      required: true
+      selector:
+        text:
+    profiles:
+      required: true
+      example: "[1]"
+      selector:
+        object:
+    pin:
+      required: true
+      selector:
+        text:
+          type: password
+    valid_from:
+      required: false
+      selector:
+        date:
+    valid_until:
+      required: false
+      selector:
+        date:
+    card_number:
+      required: false
+      selector:
+        text:
+    language:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+assign_unknown_card:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+    card_index:
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+delete_user:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+get_user_status:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+get_unknown_cards:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+edit_user_profile:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    profile_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+    name:
+      required: false
+      selector:
+        text:
+    areas:
+      required: false
+      example: "[1, 2]"
+      selector:
+        object:
+    calendar:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 64
+          mode: box
+    doors:
+      required: false
+      example: '{"3": "0"}'
+      selector:
+        object:
+add_user_profile:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    profile_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+    name:
+      required: true
+      selector:
+        text:
+    areas:
+      required: false
+      example: "[1]"
+      selector:
+        object:
+    calendar:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 64
+          mode: box
+delete_user_profile:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    profile_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+set_pin:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+    current_pin:
+      required: false
+      selector:
+        text:
+          type: password
+    pin:
+      required: true
+      selector:
+        text:
+          type: password
+enable_pin_management:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+    pin:
+      required: true
+      selector:
+        text:
+          type: password
+disable_pin_management:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    user_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+get_activity:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    limit:
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 2000
+add_calendar:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    calendar_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 64
+          mode: box
+    name:
+      required: true
+      selector:
+        text:
+    week_types:
+      required: false
+      example: "1111122222"
+      selector:
+        text:
+    mon:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    tue:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    wed:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    thu:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    fri:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    sat:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+    sun:
+      required: false
+      example: "06:00;23:00"
+      selector:
+        text:
+delete_calendar:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    calendar_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 64
+          mode: box
+add_calendar_exception:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    exception_id:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+    name:
+      required: true
+      selector:
+        text:
+    start_date:
+      required: true
+      selector:
+        date:
+    end_date:
+      required: false
+      selector:
+        date:
+    times:
+      required: false
+      example: "13:00;14:00"
+      selector:
+        text:
+    calendars:
+      required: true
+      example: "[1, 3]"
+      selector:
+        object:
+edit_calendar_exception:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    exception_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+    name:
+      required: false
+      selector:
+        text:
+    start_date:
+      required: false
+      selector:
+        date:
+    end_date:
+      required: false
+      selector:
+        date:
+    times:
+      required: false
+      example: "13:00;14:00"
+      selector:
+        text:
+    calendars:
+      required: false
+      example: "[1, 3]"
+      selector:
+        object:
+delete_calendar_exception:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    exception_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          mode: box
+get_zone_config:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    zone_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+edit_zone:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: spc_flexc
+    zone_id:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+    name:
+      required: false
+      selector:
+        text:
+    type:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 30
+          mode: box
+    area:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 64
+          mode: box
+    technical_delay:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
+    keyarm_function:
+      required: false
+      selector:
+        select:
+          options:
+            - "1"
+            - "2"
+            - "3"
+    attributes_on:
+      required: false
+      selector:
+        select:
+          multiple: true
+          options:
+            - "access"
+            - "exclude_a"
+            - "exclude_b"
+            - "24_hour"
+            - "local"
+            - "double_knock"
+            - "chime"
+            - "inhibit"
+            - "normally_open"
+            - "silent"
+            - "log"
+            - "open_only"
+            - "report_only"
+            - "final_exit"
+            - "keyarm_set"
+            - "keyarm_unset"
+            - "shunt"
+            - "report"
+            - "display"
+            - "audible"
+            - "report_when_set"
+            - "frequent"
+            - "fire_prealarm"
+            - "fire_recognition"
+            - "exit_open"
+            - "unset_local"
+            - "keyarm_delayed"
+            - "forced_set"
+            - "auto_restore"
+            - "no_bells"
+    attributes_off:
+      required: false
+      selector:
+        select:
+          multiple: true
+          options:
+            - "access"
+            - "exclude_a"
+            - "exclude_b"
+            - "24_hour"
+            - "local"
+            - "double_knock"
+            - "chime"
+            - "inhibit"
+            - "normally_open"
+            - "silent"
+            - "log"
+            - "open_only"
+            - "report_only"
+            - "final_exit"
+            - "keyarm_set"
+            - "keyarm_unset"
+            - "shunt"
+            - "report"
+            - "display"
+            - "audible"
+            - "report_when_set"
+            - "frequent"
+            - "fire_prealarm"
+            - "fire_recognition"
+            - "exit_open"
+            - "unset_local"
+            - "keyarm_delayed"
+            - "forced_set"
+            - "auto_restore"
+            - "no_bells"

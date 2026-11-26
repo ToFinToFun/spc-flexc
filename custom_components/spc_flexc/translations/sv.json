@@ -1,0 +1,1283 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SPC FlexC",
+        "description": "Konfigurera den lokala FlexC-mottagaren.",
+        "data": {
+          "host": "SPC-adress",
+          "port": "FlexC-port",
+          "encryption_key": "AES-256-nyckel",
+          "command_username": "Kommandoanvändarnamn",
+          "command_password": "Kommandolösenord",
+          "engineer_username": "Programtekniker-användare (valfritt)",
+          "engineer_password": "Programtekniker-lösenord (valfritt)"
+        },
+        "data_description": {
+          "host": "Centralens IP-adress i ditt nätverk.",
+          "port": "TCP-port som integrationen lyssnar på; centralen ansluter till den (Kommunikation → FlexC → ATS i centralen).",
+          "encryption_key": "AES-256-nyckeln (64 hextecken) för FlexC-ATS:en i centralen.",
+          "command_username": "FlexC-inloggningen för kommandon (Kommunikation → FlexC → Kommandoprofil). Dess kommandoprofil bestämmer vad Home Assistant får göra: läsa status, styra dörrar, områden och utgångar, hantera användare och koder, kalendrar med mera. En funktion vars kommando profilen inte tillåter visas som ej tillåten i sensorn Funktioner.",
+          "command_password": "Lösenord för kommandoinloggningen ovan.",
+          "engineer_username": "Valfri programteknikerinloggning (installatör). Behövs bara för att gå in i och ur fullt installatörsläge från Home Assistant, och för funktioner som kräver installatörsläge (zonkonfiguration). En programtekniker kan ändra hela centralens konfiguration; lämna tomt om du inte behöver det.",
+          "engineer_password": "Lösenord för programteknikern ovan."
+        }
+      },
+      "reconfigure": {
+        "title": "Konfigurera om SPC FlexC",
+        "description": "Uppdatera SPC FlexC-anslutningen och kommandoanvändaren.",
+        "data": {
+          "host": "SPC-adress",
+          "port": "FlexC-port",
+          "encryption_key": "AES-256-nyckel",
+          "command_username": "Kommandoanvändarnamn",
+          "command_password": "Kommandolösenord",
+          "engineer_username": "Programtekniker-användare (valfritt)",
+          "engineer_password": "Programtekniker-lösenord (valfritt)"
+        },
+        "data_description": {
+          "host": "Centralens IP-adress i ditt nätverk.",
+          "port": "TCP-port som integrationen lyssnar på; centralen ansluter till den (Kommunikation → FlexC → ATS i centralen).",
+          "encryption_key": "AES-256-nyckeln (64 hextecken) för FlexC-ATS:en i centralen.",
+          "command_username": "FlexC-inloggningen för kommandon (Kommunikation → FlexC → Kommandoprofil). Dess kommandoprofil bestämmer vad Home Assistant får göra: läsa status, styra dörrar, områden och utgångar, hantera användare och koder, kalendrar med mera. En funktion vars kommando profilen inte tillåter visas som ej tillåten i sensorn Funktioner.",
+          "command_password": "Lösenord för kommandoinloggningen ovan.",
+          "engineer_username": "Valfri programteknikerinloggning (installatör). Behövs bara för att gå in i och ur fullt installatörsläge från Home Assistant, och för funktioner som kräver installatörsläge (zonkonfiguration). En programtekniker kan ändra hela centralens konfiguration; lämna tomt om du inte behöver det.",
+          "engineer_password": "Lösenord för programteknikern ovan."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "xbus_tamper_fault": {
+        "name": "Sabotage"
+      },
+      "xbus_tamper_inhibited": {
+        "name": "Spärrad"
+      },
+      "xbus_tamper_isolated": {
+        "name": "Isolerad"
+      },
+      "internal_bells": {
+        "name": "Intern siren"
+      },
+      "external_bells": {
+        "name": "Extern siren"
+      },
+      "engineer_mode": {
+        "name": "Installatörsläge"
+      },
+      "mains_fault": {
+        "name": "Centralapparat, nätspänningsfel"
+      },
+      "battery_fault": {
+        "name": "Centralapparat, batterifel"
+      },
+      "panel_tamper": {
+        "name": "Centralapparat, kapslingssabotage"
+      },
+      "modem_1_fault": {
+        "name": "Modem 1 fel"
+      },
+      "modem_1_line_fault": {
+        "name": "Modem 1 linjefel"
+      },
+      "rf_jamming": {
+        "name": "RF Störning"
+      },
+      "xbus_mains_fault": {
+        "name": "Expansionsenhet, nätspänningsfel"
+      },
+      "xbus_battery_fault": {
+        "name": "Expansionsenhet, batterifel"
+      },
+      "atp_fault": {
+        "name": "{atp_name} fel"
+      },
+      "flexc_connection": {
+        "name": "FlexC-anslutning"
+      },
+      "zone_tamper": {
+        "name": "Sektion {zone_id} {zone_name} – Sabotage"
+      },
+      "zone_trouble": {
+        "name": "Sektion {zone_id} {zone_name} – Fel"
+      },
+      "door_entry_granted": {
+        "name": "Dörr {door_id} {door_name} – Inpassage godkänd"
+      },
+      "door_open": {
+        "name": "Dörr {door_id} {door_name} – Dörrkontakt (DPS)"
+      },
+      "system_alert_mains_fault": {
+        "name": "Systemlarm: Fel 230V AC"
+      },
+      "system_alert_battery_fault": {
+        "name": "Systemlarm: Centralapparat, batterifel"
+      },
+      "system_alert_psu_fault": {
+        "name": "Systemlarm: Centralapparat, fel på PSU-enhet"
+      },
+      "system_alert_aux_fuse_fault": {
+        "name": "Systemlarm: AUX-utgång, säkring"
+      },
+      "system_alert_external_bell_fuse_fault": {
+        "name": "Systemlarm: Extern siren säkring"
+      },
+      "system_alert_internal_bell_fuse_fault": {
+        "name": "Systemlarm: Intern siren säkring"
+      },
+      "system_alert_bell_tamper": {
+        "name": "Systemlarm: Sirensabotage"
+      },
+      "system_alert_cabinet_tamper": {
+        "name": "Systemlarm: Kapslingssabotage"
+      },
+      "system_alert_aux_tamper_1": {
+        "name": "Systemlarm: Aux. Sabotage 1"
+      },
+      "system_alert_aux_tamper_2": {
+        "name": "Systemlarm: Aux. Sabotage 2"
+      },
+      "system_alert_antenna_tamper": {
+        "name": "Systemlarm: Antennsabotage"
+      },
+      "system_alert_rf_jamming": {
+        "name": "Systemlarm: RF Störning"
+      },
+      "system_alert_fail_to_communicate": {
+        "name": "Systemlarm: Kommunikationsfel"
+      },
+      "system_alert_xbus_cable_fault": {
+        "name": "Systemlarm: X-BUS KABEL Fel"
+      },
+      "system_alert_code_tamper": {
+        "name": "Systemlarm: ANV KOD SAB"
+      },
+      "system_alert_ethernet_link": {
+        "name": "Systemlarm: Ethernet länk"
+      },
+      "system_alert_network_fault": {
+        "name": "Systemlarm: Nätverksfel"
+      },
+      "ethernet": {
+        "name": "Ethernet"
+      },
+      "door_exit_button": {
+        "name": "Dörr {door_id} {door_name} – Öppnaknapp (DRS)",
+        "state": {
+          "off": "Normal",
+          "on": "Aktiv"
+        }
+      },
+      "zone": {
+        "name": "Sektion {zone_id} {zone_name}"
+      }
+    },
+    "sensor": {
+      "xbus_aux_voltage": {
+        "name": "AUX-utgång, spänning"
+      },
+      "xbus_aux_current": {
+        "name": "AUX-utgång, ström"
+      },
+      "xbus_diagnostics": {
+        "name": "X-BUS-diagnostik"
+      },
+      "xbus_device_id": {
+        "name": "X-BUS-id"
+      },
+      "xbus_input_count": {
+        "name": "Antal ingångar"
+      },
+      "xbus_output_count": {
+        "name": "Antal utgångar"
+      },
+      "battery_voltage": {
+        "name": "Batterispänning"
+      },
+      "aux_voltage": {
+        "name": "AUX-utgång, spänning"
+      },
+      "aux_current": {
+        "name": "AUX-utgång, ström"
+      },
+      "ac_frequency": {
+        "name": "230VAC TIDSSYNK."
+      },
+      "last_flexc_event_id": {
+        "name": "Senaste FlexC-händelse-id"
+      },
+      "ats_active_path": {
+        "name": "{ats_name} aktiv väg"
+      },
+      "atp_last_tx_ok": {
+        "name": "{atp_name} senast lyckade sändning"
+      },
+      "door_status": {
+        "name": "Dörr {door_id} {door_name} – Status (rå)"
+      },
+      "door_mode": {
+        "name": "Dörr {door_id} {door_name} – Läge",
+        "state": {
+          "normal": "Dörr i normalläge",
+          "blocked": "Dörr låst (blockerad)",
+          "unlocked": "Dörr olåst"
+        }
+      },
+      "xbus_device_type": {
+        "name": "Enhetstyp"
+      },
+      "xbus_hardware_id": {
+        "name": "Hårdvaru-id"
+      },
+      "xbus_rf_type": {
+        "name": "RF-typ"
+      },
+      "xbus_rf_version": {
+        "name": "RF-version"
+      },
+      "xbus_reader_type": {
+        "name": "Läsartyp"
+      },
+      "xbus_position_1": {
+        "name": "Position 1"
+      },
+      "xbus_position_2": {
+        "name": "Position 2"
+      },
+      "xbus_psu_type": {
+        "name": "Nätaggregatstyp"
+      },
+      "xbus_sia_address": {
+        "name": "SIA-adress"
+      },
+      "xbus_status_raw": {
+        "name": "Rå status"
+      },
+      "xbus_input_raw": {
+        "name": "Rå ingång"
+      },
+      "xbus_alert_raw": {
+        "name": "Rått larm"
+      },
+      "xbus_inhibit_raw": {
+        "name": "Rå spärr"
+      },
+      "xbus_isolate_raw": {
+        "name": "Rå isolering"
+      },
+      "active_alerts": {
+        "name": "Aktiva systemlarm"
+      },
+      "clock_offset": {
+        "name": "Klockavvikelse"
+      },
+      "configuration_changed": {
+        "name": "Konfiguration ändrad"
+      },
+      "users_changed": {
+        "name": "Användare ändrade"
+      },
+      "panel_settings": {
+        "name": "Centralens inställningar"
+      },
+      "users": {
+        "name": "Användare"
+      },
+      "capabilities": {
+        "name": "Funktioner"
+      },
+      "user_profiles": {
+        "name": "Användarprofiler"
+      },
+      "wireless_sensor": {
+        "name": "Trådlös givare {radio_id}"
+      },
+      "zone_status": {
+        "name": "Sektion {zone_id} {zone_name} – Status",
+        "state": {
+          "normal": "Normal",
+          "active": "Aktiv",
+          "alarm": "Larm",
+          "tamper": "Sabotage",
+          "trouble": "Fel",
+          "inhibited": "Spärrad",
+          "isolated": "Isolerad",
+          "short": "Kortslutning",
+          "disconnected": "Avbrott",
+          "masked": "Maskerad",
+          "dc_substitution": "DC-substitution",
+          "missing": "Detektor saknas",
+          "offline": "Offline"
+        }
+      },
+      "inhibited_isolated": {
+        "name": "Spärrade och isolerade"
+      },
+      "xbus_psu_battery_voltage": {
+        "name": "Nätdel batterispänning"
+      },
+      "xbus_psu_battery_current": {
+        "name": "Nätdel batteriström"
+      },
+      "xbus_psu_output_1_voltage": {
+        "name": "Nätdel utgång 1 spänning"
+      },
+      "xbus_psu_output_1_current": {
+        "name": "Nätdel utgång 1 ström"
+      },
+      "xbus_psu_output_2_voltage": {
+        "name": "Nätdel utgång 2 spänning"
+      },
+      "xbus_psu_output_2_current": {
+        "name": "Nätdel utgång 2 ström"
+      },
+      "xbus_psu_output_3_voltage": {
+        "name": "Nätdel utgång 3 spänning"
+      },
+      "xbus_psu_output_3_current": {
+        "name": "Nätdel utgång 3 ström"
+      },
+      "unknown_cards": {
+        "name": "Okända kort"
+      },
+      "xbus_status": {
+        "name": "Status",
+        "state": {
+          "ok": "OK",
+          "fault": "Fel",
+          "inhibited": "Spärrad",
+          "isolated": "Isolerad"
+        }
+      },
+      "wireless_zone_sensor": {
+        "name": "Sektion {zone_id} {zone_name} – Trådlös givare"
+      }
+    },
+    "button": {
+      "open_momentarily": {
+        "name": "Dörr {door_id} {door_name} – Momentan"
+      },
+      "open_permanently": {
+        "name": "Dörr {door_id} {door_name} – Lås upp"
+      },
+      "set_normal": {
+        "name": "Dörr {door_id} {door_name} – Normal"
+      },
+      "lock": {
+        "name": "Dörr {door_id} {door_name} – Blockera"
+      },
+      "restore": {
+        "name": "Sektion {zone_id} {zone_name} – Återställ"
+      },
+      "silence_bells": {
+        "name": "Tysta sirener"
+      },
+      "flexc_test_call": {
+        "name": "{atp_name} testanrop"
+      }
+    },
+    "switch": {
+      "inhibition": {
+        "name": "Sektion {zone_id} {zone_name} – Spärra"
+      },
+      "isolation": {
+        "name": "Sektion {zone_id} {zone_name} – Isolera"
+      },
+      "engineer_mode_control": {
+        "name": "Styr installatörsläge"
+      },
+      "system_alert_mains_fault_inhibit": {
+        "name": "Spärra: Fel 230V AC"
+      },
+      "system_alert_mains_fault_isolate": {
+        "name": "Isolera: Fel 230V AC"
+      },
+      "system_alert_battery_fault_inhibit": {
+        "name": "Spärra: Centralapparat, batterifel"
+      },
+      "system_alert_battery_fault_isolate": {
+        "name": "Isolera: Centralapparat, batterifel"
+      },
+      "system_alert_psu_fault_inhibit": {
+        "name": "Spärra: Centralapparat, fel på PSU-enhet"
+      },
+      "system_alert_psu_fault_isolate": {
+        "name": "Isolera: Centralapparat, fel på PSU-enhet"
+      },
+      "system_alert_aux_fuse_fault_inhibit": {
+        "name": "Spärra: AUX-utgång, säkring"
+      },
+      "system_alert_aux_fuse_fault_isolate": {
+        "name": "Isolera: AUX-utgång, säkring"
+      },
+      "system_alert_external_bell_fuse_fault_inhibit": {
+        "name": "Spärra: Extern siren säkring"
+      },
+      "system_alert_external_bell_fuse_fault_isolate": {
+        "name": "Isolera: Extern siren säkring"
+      },
+      "system_alert_internal_bell_fuse_fault_inhibit": {
+        "name": "Spärra: Intern siren säkring"
+      },
+      "system_alert_internal_bell_fuse_fault_isolate": {
+        "name": "Isolera: Intern siren säkring"
+      },
+      "system_alert_bell_tamper_inhibit": {
+        "name": "Spärra: Sirensabotage"
+      },
+      "system_alert_bell_tamper_isolate": {
+        "name": "Isolera: Sirensabotage"
+      },
+      "system_alert_cabinet_tamper_inhibit": {
+        "name": "Spärra: Kapslingssabotage"
+      },
+      "system_alert_cabinet_tamper_isolate": {
+        "name": "Isolera: Kapslingssabotage"
+      },
+      "system_alert_aux_tamper_1_inhibit": {
+        "name": "Spärra: Aux. Sabotage 1"
+      },
+      "system_alert_aux_tamper_1_isolate": {
+        "name": "Isolera: Aux. Sabotage 1"
+      },
+      "system_alert_aux_tamper_2_inhibit": {
+        "name": "Spärra: Aux. Sabotage 2"
+      },
+      "system_alert_aux_tamper_2_isolate": {
+        "name": "Isolera: Aux. Sabotage 2"
+      },
+      "system_alert_antenna_tamper_inhibit": {
+        "name": "Spärra: Antennsabotage"
+      },
+      "system_alert_antenna_tamper_isolate": {
+        "name": "Isolera: Antennsabotage"
+      },
+      "system_alert_rf_jamming_inhibit": {
+        "name": "Spärra: RF Störning"
+      },
+      "system_alert_rf_jamming_isolate": {
+        "name": "Isolera: RF Störning"
+      },
+      "system_alert_fail_to_communicate_inhibit": {
+        "name": "Spärra: Kommunikationsfel"
+      },
+      "system_alert_fail_to_communicate_isolate": {
+        "name": "Isolera: Kommunikationsfel"
+      },
+      "system_alert_xbus_cable_fault_inhibit": {
+        "name": "Spärra: X-BUS KABEL Fel"
+      },
+      "system_alert_xbus_cable_fault_isolate": {
+        "name": "Isolera: X-BUS KABEL Fel"
+      },
+      "system_alert_code_tamper_inhibit": {
+        "name": "Spärra: ANV KOD SAB"
+      },
+      "system_alert_code_tamper_isolate": {
+        "name": "Isolera: ANV KOD SAB"
+      },
+      "system_alert_ethernet_link_inhibit": {
+        "name": "Spärra: Ethernet länk"
+      },
+      "system_alert_ethernet_link_isolate": {
+        "name": "Isolera: Ethernet länk"
+      },
+      "system_alert_network_fault_inhibit": {
+        "name": "Spärra: Nätverksfel"
+      },
+      "system_alert_network_fault_isolate": {
+        "name": "Isolera: Nätverksfel"
+      },
+      "mapping_gate": {
+        "name": "Mapping gate {mg_id} {mg_name}"
+      }
+    },
+    "alarm_control_panel": {
+      "panel_alarm": {
+        "name": "Larm"
+      },
+      "area": {
+        "name": "Område {area_id} {area_name}"
+      }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Dörr {door_id} {door_name} – Lås"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Kalender {calendar_id} {calendar_name}"
+      }
+    }
+  },
+  "exceptions": {
+    "area_not_ready_engineer": {
+      "message": "Kan inte tillkoppla {area}: installatörsläge är aktivt (SPC-orsak {reason})."
+    },
+    "area_not_ready_zone": {
+      "message": "Kan inte tillkoppla {area}: sektion {zone} (id {zone_id}) är inte redo (SPC-orsak {reason})."
+    },
+    "area_not_ready_faults": {
+      "message": "Kan inte ändra läge för {area}: området är inte redo (SPC-orsak {reason}). Aktiva fel: {faults}"
+    },
+    "area_not_ready": {
+      "message": "Kan inte ändra läge för {area}: området är inte redo (SPC-orsak {reason})."
+    },
+    "partset_a_not_supported": {
+      "message": "{area} stöder inte deltillkoppling A."
+    },
+    "partset_b_not_supported": {
+      "message": "{area} stöder inte deltillkoppling B."
+    },
+    "global_arm_incomplete": {
+      "message": "SPC:s tillkoppling av alla områden blev inte fullständig. Områden som redan fått kommandot: {areas}. Fel: {error}"
+    },
+    "global_disarm_incomplete": {
+      "message": "SPC:s frånkoppling av alla områden blev inte fullständig. Fel: {errors}"
+    },
+    "no_loaded_entry": {
+      "message": "Ingen laddad SPC FlexC-integration hittades."
+    },
+    "several_entries": {
+      "message": "Det finns flera SPC FlexC-centraler; välj en med config_entry_id."
+    },
+    "log_needs_id": {
+      "message": "Loggen {log} behöver ett id (dörr-, sektions- eller ATS-nummer)."
+    },
+    "log_read_failed": {
+      "message": "Kunde inte läsa loggen {log}: {error}"
+    },
+    "panel_command_failed": {
+      "message": "Centralen accepterade inte {service}: {error}"
+    },
+    "unknown_calendar": {
+      "message": "Centralen har ingen kalender {calendar_id}."
+    },
+    "invalid_calendar_times": {
+      "message": "Ogiltiga tider för {day}: {value}. Använd perioder 'TT:MM;TT:MM' med mellanslag emellan."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Visningsnamn för användare",
+        "description": "Ett USER_ID=Visningsnamn per rad (till exempel 9995=Home Assistant).",
+        "data": {
+          "user_aliases": "Ersättningsnamn för användare",
+          "show_in_sidebar": "Visa SPC-appen i sidomenyn",
+          "keep_clock_right": "Håll centralens klocka rätt"
+        },
+        "data_description": {
+          "show_in_sidebar": "Alla SPC-kort med flikar (översikt, användare, profiler, kalendrar, loggar, aktivitet, system) som en sida i Home Assistants sidomeny, för administratörer.",
+          "keep_clock_right": "När centralens klocka går mer än 3 sekunder fel (en central som följer elnätet driver) ställs den efter Home Assistants tid, högst en gång i timmen."
+        }
+      },
+      "doors": {
+        "title": "Dörrcentraler",
+        "description": "Vilken dörrcentral varje dörr sitter på ({doors}). Centralen rapporterar inte detta via FlexC; webbsidan visar det under Konfiguration > Dörrar, kolumnen \"Plats\". Auto: den enda dörrcentralen om det bara finns en, annars ligger dörren under centralen."
+      },
+      "wireless": {
+        "title": "Trådlösa sektioner",
+        "description": "Sektioner på centralens trådlösa mottagare. Centralen rapporterar inte detta via FlexC; som standard antas varje sektion som inte sitter på något kort vara trådlös.",
+        "data": {
+          "wireless_zones": "Trådlösa sektioner"
+        }
+      },
+      "radio_ids": {
+        "title": "Trådlösa detektorer",
+        "description": "Radio-ID för detektorn på varje trådlös sektion, som centralens webbsida visar under Status > Hårdvara > Trådlös status (FlexC talar inte om det). Lämna tomt om okänt. Fält: {zones}"
+      }
+    },
+    "error": {
+      "invalid_aliases": "Använd ett numeriskt USER_ID=Visningsnamn per rad."
+    }
+  },
+  "services": {
+    "get_log": {
+      "name": "Läs centralens logg",
+      "description": "Läser en logg från SPC-centralen och returnerar posterna, nyaste först. Kortnummer returneras aldrig.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "log": {
+          "name": "Logg",
+          "description": "Vilken logg som ska läsas."
+        },
+        "id": {
+          "name": "ID",
+          "description": "Dörrnummer för passagelogg, sektionsnummer för sektionslogg, ATS-nummer för ATS-händelselogg."
+        },
+        "limit": {
+          "name": "Max antal",
+          "description": "Högsta antal poster som returneras."
+        },
+        "atp": {
+          "name": "ATP",
+          "description": "ATP-nummer inom ATS:en, för ATP-loggarna (standard 1)."
+        }
+      }
+    },
+    "set_clock": {
+      "name": "Ställ centralens klocka",
+      "description": "Ställer SPC-centralens klocka efter Home Assistants lokala tid. Kommandot skickas en gång.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        }
+      }
+    },
+    "clear_alerts": {
+      "name": "Rensa systemlarm",
+      "description": "Rensar alla systemlarm i SPC-centralen. Kommandot skickas en gång.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        }
+      }
+    },
+    "set_calendar_week": {
+      "name": "Ändra kalendervecka",
+      "description": "Ändrar angivna dagar för en veckotyp i en kalender i centralen; dagar som utelämnas behåller sina tider. Tider anges i centralens format: perioder 'start;slut' med mellanslag emellan, till exempel '06:00;23:00 05:45;12:00'. Tom text tömmer dagen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "calendar_id": {
+          "name": "Kalender",
+          "description": "Kalenderns nummer i centralen."
+        },
+        "week_type": {
+          "name": "Veckotyp",
+          "description": "Veckotyp 1, 2 eller 3."
+        },
+        "mon": {
+          "name": "Måndag",
+          "description": "Perioder för måndag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "tue": {
+          "name": "Tisdag",
+          "description": "Perioder för tisdag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "wed": {
+          "name": "Onsdag",
+          "description": "Perioder för onsdag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "thu": {
+          "name": "Torsdag",
+          "description": "Perioder för torsdag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "fri": {
+          "name": "Fredag",
+          "description": "Perioder för fredag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "sat": {
+          "name": "Lördag",
+          "description": "Perioder för lördag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        },
+        "sun": {
+          "name": "Söndag",
+          "description": "Perioder för söndag, t.ex. 06:00;23:00. Utelämna för att behålla."
+        }
+      }
+    },
+    "set_calendar": {
+      "name": "Ändra kalender",
+      "description": "Ändrar en kalenders namn och/eller vilken veckotyp (1–3) som gäller för varje vecka på året. Veckotyper anges som siffror från vecka 1; veckor som inte anges behåller sin typ.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "calendar_id": {
+          "name": "Kalender",
+          "description": "Kalenderns nummer i centralen."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn (1–16 tecken)."
+        },
+        "week_types": {
+          "name": "Veckotyper",
+          "description": "Siffror 1–3, en per vecka från vecka 1, t.ex. 1111122222."
+        }
+      }
+    },
+    "edit_user": {
+      "name": "Ändra användare",
+      "description": "Ändrar en användares namn, profiler eller giltighetsdatum. Hela posten läses först och skickas tillbaka med bara dessa fält ändrade; koder och kortnummer lämnas orörda och visas aldrig.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarens nummer i centralen."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "profiles": {
+          "name": "Profiler",
+          "description": "Lista med upp till 5 profilnummer, t.ex. [1, 2]."
+        },
+        "valid_from": {
+          "name": "Giltig från",
+          "description": "Första dagen användarens kod och kort fungerar (centralens \"Datumbegränsad\"). Ange båda datumen."
+        },
+        "valid_until": {
+          "name": "Giltig till",
+          "description": "Sista dagen användarens kod och kort fungerar."
+        },
+        "no_date_limit": {
+          "name": "Ingen datumgräns",
+          "description": "Ta bort giltighetsperioden."
+        },
+        "card_number": {
+          "name": "Kortnummer",
+          "description": "Kortnumret som centralens webbsida visar det; 0 tar bort kortet."
+        },
+        "language": {
+          "name": "Språk",
+          "description": "Användarens språk (255 = systemspråk, 7 = svenska)."
+        },
+        "card_blocked": {
+          "name": "Spärra kort",
+          "description": "Stäng av kortet tillfälligt."
+        },
+        "extended_time": {
+          "name": "Förlängd tid",
+          "description": "Längre dörrtider när kortet visas."
+        },
+        "pin_bypass": {
+          "name": "PIN-förbikoppling",
+          "description": "Kortet passerar dörrar med PIN-läsare utan PIN-kod."
+        },
+        "priority": {
+          "name": "Prioritet",
+          "description": "Kortet ger access när dörrar är offline."
+        },
+        "escort": {
+          "name": "Vittne",
+          "description": "Kort med detta kan låta kort med vittneskrav passera."
+        },
+        "custodian": {
+          "name": "Ledsagare",
+          "description": "Första person in och sista ut ur området."
+        }
+      }
+    },
+    "add_user": {
+      "name": "Lägg till användare",
+      "description": "Lägger till en användare med namn, profiler och kod och sparar konfigurationen. Kräver den sparade nyckeln för användarnumret: skapa användaren en gång i centralen och slå på PIN-hantering för den; nyckeln är densamma när användaren tas bort och läggs till igen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarnummer i centralen."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "profiles": {
+          "name": "Profiler",
+          "description": "Lista med upp till 5 profilnummer, t.ex. [1, 2]."
+        },
+        "pin": {
+          "name": "PIN",
+          "description": "4–8 siffror."
+        },
+        "valid_from": {
+          "name": "Giltig från",
+          "description": "Första dagen användarens kod och kort fungerar (centralens \"Datumbegränsad\"). Ange båda datumen."
+        },
+        "valid_until": {
+          "name": "Giltig till",
+          "description": "Sista dagen användarens kod och kort fungerar."
+        },
+        "card_number": {
+          "name": "Kortnummer",
+          "description": "Kortnumret som centralens webbsida visar det; 0 tar bort kortet."
+        },
+        "language": {
+          "name": "Språk",
+          "description": "Användarens språk (255 = systemspråk, 7 = svenska)."
+        }
+      }
+    },
+    "delete_user": {
+      "name": "Ta bort användare",
+      "description": "Tar bort en användare och sparar konfigurationen. En sparad nyckel behålls, så användarnumret kan läggas till igen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarens nummer i centralen."
+        }
+      }
+    },
+    "get_user_status": {
+      "name": "Läs användarstatus",
+      "description": "Läser en användares status från centralen: felaktiga PIN-försök, senaste PIN-byte, antal PIN-byten och användarlarm. Innehåller inga koder.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarnummer i centralen."
+        }
+      }
+    },
+    "get_unknown_cards": {
+      "name": "Läs okända kort",
+      "description": "Läser kort som centralen har sett men inte känner till. ",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        }
+      }
+    },
+    "edit_user_profile": {
+      "name": "Ändra användarprofil",
+      "description": "Ändrar en användarprofils namn, områden, kalender eller dörrinställningar. Hela profilen läses först och skickas tillbaka med bara dessa fält ändrade.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Användarprofilens nummer."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "areas": {
+          "name": "Områden",
+          "description": "Lista med områdesnummer, t.ex. [1, 2]. Ersätter nuvarande områden."
+        },
+        "calendar": {
+          "name": "Kalender",
+          "description": "Kalendernummer, 0 för ingen."
+        },
+        "doors": {
+          "name": "Dörrar",
+          "description": "Dörrinställningar per dörrnummer, t.ex. {\"3\": \"0\"}; null tar bort dörren ur profilen. Värdenas betydelse är inte kartlagd än."
+        }
+      }
+    },
+    "add_user_profile": {
+      "name": "Lägg till användarprofil",
+      "description": "Lägger till en användarprofil med namn, områden och kalender.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Nytt profilnummer."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "areas": {
+          "name": "Områden",
+          "description": "Lista med områdesnummer, t.ex. [1]."
+        },
+        "calendar": {
+          "name": "Kalender",
+          "description": "Kalendernummer, 0 för ingen."
+        }
+      }
+    },
+    "delete_user_profile": {
+      "name": "Ta bort användarprofil",
+      "description": "Tar bort en användarprofil.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Användarprofilens nummer."
+        }
+      }
+    },
+    "set_pin": {
+      "name": "Byt PIN",
+      "description": "Byter en användares PIN-kod. Ange nuvarande kod, eller slå först på PIN-hantering för användaren. Koderna sparas aldrig och loggas inte; den nya koden läses tillbaka när ändringen har sparats.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarnummer i centralen."
+        },
+        "current_pin": {
+          "name": "Nuvarande PIN",
+          "description": "Användarens kod nu (4–8 siffror). Behövs inte när PIN-hantering är påslagen för användaren."
+        },
+        "pin": {
+          "name": "Ny PIN",
+          "description": "4–8 siffror."
+        }
+      }
+    },
+    "enable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarnummer i centralen."
+        },
+        "pin": {
+          "name": "Nuvarande PIN",
+          "description": "Användarens kod nu (4–8 siffror)."
+        }
+      },
+      "name": "Slå på PIN-hantering",
+      "description": "Låter Home Assistant byta koden på detta användarnummer utan nuvarande kod. Medgivandet gäller numret, inte personen: det finns kvar när användaren tas bort, så en ny användare på samma nummer hanteras också. Ange nuvarande kod för användaren på numret: nyckeln räknas fram och sparas i Home Assistants privata lagring (aldrig i loggar eller attribut). Koden kan inte kontrolleras via FlexC, så en fel kod ger en fel nyckel; nyckeln bekräftas när användaren loggar in på en knappsats med en kod som Home Assistant har satt."
+    },
+    "disable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarnummer i centralen."
+        }
+      },
+      "name": "Slå av PIN-hantering",
+      "description": "Glömmer den sparade nyckeln för detta användarnummer. Att byta kod på det kräver då nuvarande kod igen."
+    },
+    "get_activity": {
+      "name": "Läs aktivitet",
+      "description": "Returnerar centralens senaste aktivitet, nyast först: kommandon Home Assistant skickade, centralens svar, händelser den skickade och nya rader i dess system- och passagelogg. Namn visas; koder och kortnummer aldrig.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "limit": {
+          "name": "Antal",
+          "description": "Högsta antal rader."
+        }
+      }
+    },
+    "add_calendar": {
+      "name": "Lägg till kalender",
+      "description": "Lägger till en kalender med namn, veckotyper och tider för veckotyp 1 och sparar konfigurationen. Referenscentralen tillåter högst 4 kalendrar; använd första lediga nummer.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "calendar_id": {
+          "name": "Kalender",
+          "description": "Kalendernummer i centralen."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "week_types": {
+          "name": "Veckotyper",
+          "description": "Siffror 1–3, en per vecka från vecka 1; veckor som saknas får veckotyp 1."
+        },
+        "mon": {
+          "name": "Måndag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "tue": {
+          "name": "Tisdag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "wed": {
+          "name": "Onsdag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "thu": {
+          "name": "Torsdag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "fri": {
+          "name": "Fredag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "sat": {
+          "name": "Lördag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        },
+        "sun": {
+          "name": "Söndag",
+          "description": "Perioder för veckotyp 1, t.ex. 06:00;23:00 (flera åtskilda med mellanslag)."
+        }
+      }
+    },
+    "delete_calendar": {
+      "name": "Ta bort kalender",
+      "description": "Tar bort en kalender och sparar konfigurationen. Dörrar, områden eller profiler som använder den kan förlora den inställningen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "calendar_id": {
+          "name": "Kalender",
+          "description": "Kalendernummer i centralen."
+        }
+      }
+    },
+    "add_calendar_exception": {
+      "name": "Lägg till undantag",
+      "description": "Lägger till en undantagsdag eller -period med egna tider i en eller flera kalendrar och sparar konfigurationen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "exception_id": {
+          "name": "Undantag",
+          "description": "Valfritt; första lediga nummer används om det utelämnas."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Första dagen."
+        },
+        "end_date": {
+          "name": "Slutdatum",
+          "description": "Sista dagen; startdatumet om det utelämnas."
+        },
+        "times": {
+          "name": "Tider",
+          "description": "Upp till 4 perioder, t.ex. 13:00;14:00 (flera åtskilda med mellanslag); tomt = inga tider den dagen."
+        },
+        "calendars": {
+          "name": "Kalendrar",
+          "description": "Kalendrar som undantaget gäller, t.ex. [1, 3]."
+        }
+      }
+    },
+    "edit_calendar_exception": {
+      "name": "Ändra undantag",
+      "description": "Ändrar ett undantag; fält som inte anges behåller sitt värde. Sparar konfigurationen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "exception_id": {
+          "name": "Undantag",
+          "description": "Undantagets nummer."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "1–16 tecken."
+        },
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Första dagen."
+        },
+        "end_date": {
+          "name": "Slutdatum",
+          "description": "Sista dagen; startdatumet om det utelämnas."
+        },
+        "times": {
+          "name": "Tider",
+          "description": "Upp till 4 perioder, t.ex. 13:00;14:00 (flera åtskilda med mellanslag); tomt = inga tider den dagen."
+        },
+        "calendars": {
+          "name": "Kalendrar",
+          "description": "Kalendrar som undantaget gäller, t.ex. [1, 3]."
+        }
+      }
+    },
+    "delete_calendar_exception": {
+      "name": "Ta bort undantag",
+      "description": "Tar bort ett undantag och sparar konfigurationen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "exception_id": {
+          "name": "Undantag",
+          "description": "Undantagets nummer."
+        }
+      }
+    },
+    "assign_unknown_card": {
+      "name": "Koppla okänt kort",
+      "description": "Ge en användare ett kort som centralen sett men inte känner (som webbsidans \"Okänt kort\"). Sensorn Okända kort listar dem, nyast först, med dörr, tid och kortnummer.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "user_id": {
+          "name": "Användar-ID",
+          "description": "Användarens nummer i centralen."
+        },
+        "card_index": {
+          "name": "Okänt kort",
+          "description": "Nummer i listan Okända kort (1 = nyast)."
+        }
+      }
+    },
+    "engineer_login": {
+      "name": "Logga in som programtekniker",
+      "description": "Loggar in som programtekniker. Centralen måste bekräfta att inloggningen är en programtekniker. Lösenordet hålls bara i minnet, om du inte väljer Kom ihåg: då sparas det i Home Assistants konfiguration (okrypterat).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "username": {
+          "name": "Användarnamn",
+          "description": "Programteknikerns inloggning på centralen."
+        },
+        "password": {
+          "name": "Lösenord",
+          "description": "Programteknikerns lösenord."
+        },
+        "remember": {
+          "name": "Kom ihåg",
+          "description": "Spara inloggningen i Home Assistant så att den finns kvar efter omstart. Annars avslutas den efter 30 minuter utan användning eller vid omstart."
+        }
+      }
+    },
+    "engineer_logout": {
+      "name": "Logga ut programtekniker",
+      "description": "Loggar ut programteknikern och glömmer ett sparat lösenord. Nekas medan centralen står i installatörsläge.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        }
+      }
+    },
+    "set_engineer_mode": {
+      "name": "Installatörsläge",
+      "description": "Går in i eller lämnar installatörsläge med programteknikerns inloggning. I installatörsläge går centralen inte att tillkoppla.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "enter": {
+          "name": "Gå in",
+          "description": "På går in i installatörsläge, av lämnar det."
+        }
+      }
+    },
+    "get_zone_config": {
+      "name": "Läs sektionsinställningar",
+      "description": "Läser en sektions inställningar från centralen: typ, område, attribut, nyckeltillkoppling och teknisk fördröjning.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "zone_id": {
+          "name": "Sektion",
+          "description": "Sektionsnummer."
+        }
+      }
+    },
+    "edit_zone": {
+      "name": "Ändra sektion",
+      "description": "Ändrar en sektions inställningar på centralen och sparar. Kräver programteknikerns inloggning och att centralen står i installatörsläge. Bara de fält som anges ändras.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Central",
+          "description": "SPC FlexC-central. Behövs bara om det finns flera."
+        },
+        "zone_id": {
+          "name": "Sektion",
+          "description": "Sektionsnummer."
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Ny sektionsbeskrivning (1-16 tecken)."
+        },
+        "type": {
+          "name": "Sektionstyp",
+          "description": "Sektionstypens nummer som på webben: 0 Larm, 1 In/utpassering, 3 Brand, 9 Tekniskt larm, 11 Nyckeltillkoppling, 16 Låskontroll, 12 Används ej och så vidare."
+        },
+        "area": {
+          "name": "Område",
+          "description": "Områdets nummer som sektionen hör till."
+        },
+        "technical_delay": {
+          "name": "Teknisk fördröjning",
+          "description": "Fördröjning innan en teknisk sektion utlöser, i sekunder (0-9999)."
+        },
+        "keyarm_function": {
+          "name": "Nyckeltillkoppling",
+          "description": "För nyckelsektioner: 1 Deltillkoppling A, 2 Deltillkoppling B, 3 Tillkoppling."
+        },
+        "attributes_on": {
+          "name": "Slå på attribut",
+          "description": "Sektionsattribut att slå på."
+        },
+        "attributes_off": {
+          "name": "Slå av attribut",
+          "description": "Sektionsattribut att slå av."
+        }
+      }
+    }
+  },
+  "selector": {
+    "log": {
+      "options": {
+        "access": "Passagelogg (dörr)",
+        "system": "Systemlogg",
+        "zone": "Sektionslogg",
+        "ats": "FlexC ATS-händelselogg",
+        "ats_network": "FlexC ATS-nätverkslogg",
+        "atp": "FlexC ATP-logg",
+        "atp_network": "FlexC ATP-nätverkslogg",
+        "wireless": "Trådlös logg"
+      }
+    }
+  },
+  "device": {
+    "wireless_receiver": {
+      "name": "Trådlös mottagare"
+    }
+  }
+}

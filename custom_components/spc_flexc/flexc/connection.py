@@ -1,0 +1,1477 @@
+"""Persistent FlexC transport client for SPC panels."""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import logging
+import os
+import re
+import secrets
+import zlib
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
+from typing import Any
+
+from Crypto.Cipher import AES
+from homeassistant.const import CONF_HOST
+
+from ..const import (
+    CONF_COMMAND_PASSWORD,
+    CONF_COMMAND_USERNAME,
+    CONF_KEY,
+    CONF_PORT,
+    DEFAULT_PORT,
+)
+from .events import parse_event_payload
+from .flexml import (
+    build_alert_status_command,
+    build_area_status_batch,
+    build_flexc_ats_status_command,
+    build_panel_summary_command,
+    build_user_config_command,
+    build_zone_status_batch,
+    parse_alert_status,
+    parse_area_status,
+    parse_flexc_ats_status,
+    parse_panel_summary,
+    parse_user_config_name,
+    parse_zone_status,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+INTERNAL_IV = bytes.fromhex("6D53436553737850436C656E46656900")
+
+PROTOCOL_ID = 0x46
+PROTOCOL_VERSION = 0x01
+
+RCT_CONNECTION_ID = 0x77359401
+INITIAL_RCT_SEQUENCE = 0x12345678
+
+MSG_CONNECTION_REQUEST_LEGACY = 0x00
+MSG_CONNECTION_ACK_LEGACY = 0x01
+MSG_CONNECTION_REQUEST = 0x02
+MSG_CONNECTION_ACK = 0x03
+
+MSG_POLL = 0x20
+MSG_KEY_UPDATE = 0x40
+MSG_KEY_ACK = 0x41
+MSG_POLL_ACK = 0x21
+
+MSG_EVENT = 0x60
+MSG_EVENT_ACK = 0x61
+
+MSG_DATA = 0x80
+MSG_DATA_ACK = 0x81
+
+MSG_ERROR = 0xFF
+
+CONNECT_TIMEOUT = 30.0
+COMMAND_TIMEOUT = 15.0
+FRAME_IDLE_TIMEOUT = 60.0
+MAX_FRAME_LENGTH = 65536
+# The SPC sends an application reply longer than this in several DATA
+# messages. Each acknowledgement must carry at most this length; echoing the
+# full application length makes the panel resend the first part forever.
+REPLY_CHUNK_LENGTH = 0x2800
+COMMAND_NAME_PATTERN = re.compile(r"<(CMD_[A-Z0-9_]+)\b")
+
+
+class FlexCError(Exception):
+    """Base FlexC exception."""
+
+
+class FlexCConnectionError(FlexCError):
+    """FlexC connection error."""
+
+
+class FlexCProtocolError(FlexCError):
+    """FlexC protocol error."""
+
+
+class FlexCCommandError(FlexCError):
+    """SPC rejected a FlexC command."""
+
+
+class FlexCAuthenticationError(FlexCCommandError):
+    """The SPC rejected the FlexC command credentials (error 54)."""
+
+
+class FlexCCommandTimeout(FlexCCommandError):
+    """A FLEXML command did not receive a reply before the timeout."""
+
+
+def _be16(value: bytes) -> int:
+    return int.from_bytes(value, "big")
+
+
+def _be32(value: bytes) -> int:
+    return int.from_bytes(value, "big")
+
+
+def _put16(value: int) -> bytes:
+    return int(value).to_bytes(2, "big")
+
+
+def _chunk_ack_source(
+    message: Mapping[str, Any], acknowledged: int | None = None
+) -> dict[str, Any]:
+    """Return the DATA message with the acknowledged length in its header.
+
+    The acknowledgement clones the message's data header, whose first four
+    bytes are a length. For a reply split into several parts the panel
+    expects the number of application bytes received so far
+    (``acknowledged``); if it gets anything else it sends the same part
+    again. Without ``acknowledged`` the length is capped to one part.
+    """
+    if "data_header" not in message or "application_length" not in message:
+        return dict(message)
+    if acknowledged is None:
+        acknowledged = min(int(message["application_length"]), REPLY_CHUNK_LENGTH)
+    header = bytearray(message["data_header"])
+    header[0:4] = _put32(acknowledged)
+    return {**message, "data_header": bytes(header)}
+
+
+def _put32(value: int) -> bytes:
+    return int(value & 0xFFFFFFFF).to_bytes(4, "big")
+
+
+@dataclass
+class _CommandTrace:
+    """Bounded, credential-free diagnostics for one in-flight command."""
+
+    command_id: int
+    name: str
+    session: int
+    started: float
+    sent_at: float | None = None
+    ack_at: float | None = None
+    data_first_at: float | None = None
+    data_last_at: float | None = None
+    data_frames: int = 0
+    events: int = 0
+    polls: int = 0
+    errors: int = 0
+    unexpected: int = 0
+    timeline: list[str] = field(default_factory=list)
+
+    def record(self, kind: str, now: float) -> None:
+        """Keep a small relative-time history, even on busy sessions."""
+        if len(self.timeline) < 24:
+            self.timeline.append(f"{(now - self.started) * 1000:.0f}ms:{kind}")
+
+
+class FlexCClient:
+    """Persistent FlexC receiver/client.
+
+    The SPC acts as the TCP client and connects to Home Assistant.
+    Home Assistant therefore listens on the configured FlexC port.
+    """
+
+    def __init__(self, config: Mapping[str, Any]) -> None:
+        """Initialize the FlexC client."""
+        self.host = str(config[CONF_HOST])
+        self.port = int(config.get(CONF_PORT, DEFAULT_PORT))
+
+        key_value = config[CONF_KEY]
+
+        if isinstance(key_value, bytes):
+            self._key = key_value
+        else:
+            try:
+                self._key = bytes.fromhex(str(key_value))
+            except ValueError as err:
+                raise ValueError("FlexC encryption key must be hexadecimal") from err
+
+        if len(self._key) != 32:
+            raise ValueError("FlexC encryption key must contain exactly 32 bytes")
+
+        self.command_username = str(config[CONF_COMMAND_USERNAME])
+        self.command_password = str(config[CONF_COMMAND_PASSWORD])
+
+        self.connected = False
+
+        self._server: asyncio.AbstractServer | None = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
+
+        self._connected_event = asyncio.Event()
+        self._closed = False
+
+        self._connection_lock = asyncio.Lock()
+        self._command_lock = asyncio.Lock()
+
+        self._last_message: dict[str, Any] | None = None
+        self._rct_sequence = INITIAL_RCT_SEQUENCE
+
+        self._trace_counter = 0
+        self._active_trace: _CommandTrace | None = None
+        self._pending_reply: asyncio.Future[str] | None = None
+        self._poll_waiter: asyncio.Future[dict[str, Any]] | None = None
+        self._response_buffer = bytearray()
+        self._response_length: int | None = None
+        # Bytes of the current multi-part application message acknowledged.
+        self._ack_total: int | None = None
+        self._ack_received = 0
+
+        self._event_callback: Callable[[dict[str, str]], None] | None = None
+        self._session_ready_callback: Callable[[int], None] | None = None
+        self._session_generation = 0
+        self._session_identity: tuple[int, int, int] | None = None
+        self._session_poll_identity_seen = False
+        self._assigned_spt_account: int | None = None
+        self._reported_identity_changes: set[str] = set()
+        self._notified_session_generation = 0
+        self._local_close_reasons: dict[asyncio.StreamWriter, str] = {}
+
+        # Transport context used to build the next outbound DATA frame.
+        #
+        # A fresh POLL initializes the context. Each validated DATA reply then
+        # becomes the context for the following command. This avoids waiting
+        # for another POLL before every FLEXML request.
+        self._command_context: dict[str, Any] | None = None
+        self._context_event = asyncio.Event()
+        self._recovery_started_at: float | None = None
+        # An acknowledged unsolicited EVENT refreshes the idle DATA context.
+        # This flag is retained for recovery paths requiring a fresh POLL.
+        self._awaiting_poll_after_event = False
+        self._event_resync_started_at: float | None = None
+
+    def set_command_observer(
+        self,
+        observer: Callable[[str], Callable[[str | None, str | None], None] | None]
+        | None,
+    ) -> None:
+        """Register an observer told about every command and its outcome.
+
+        ``observer(command)`` is called just before a command is sent and may
+        return a callback that is called once with ``(reply, error)``. The
+        observer must not raise; errors in it are logged and ignored.
+        """
+        self._command_observer = observer
+
+    def _observe_command(
+        self, command: str
+    ) -> Callable[[str | None, str | None], None] | None:
+        observer = getattr(self, "_command_observer", None)
+        if observer is None:
+            return None
+        try:
+            return observer(command)
+        except Exception:
+            _LOGGER.exception("SPC activity observer failed")
+            return None
+
+    @staticmethod
+    def _finish_observation(
+        done: Callable[[str | None, str | None], None] | None,
+        reply: str | None,
+        error: str | None,
+    ) -> None:
+        if done is None:
+            return
+        try:
+            done(reply, error)
+        except Exception:
+            _LOGGER.exception("SPC activity observer failed")
+
+    def set_session_ready_callback(self, callback: Callable[[int], None]) -> None:
+        """Register a callback invoked when a fresh session context is ready."""
+        self._session_ready_callback = callback
+
+    async def async_ensure_connected(self) -> None:
+        """Ensure that the SPC has established a FlexC session."""
+        if self.connected and self._writer is not None:
+            return
+
+        async with self._connection_lock:
+            if self.connected and self._writer is not None:
+                return
+
+            if self._server is None:
+                await self._start_server()
+
+        try:
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                await self._connected_event.wait()
+        except TimeoutError as err:
+            raise FlexCConnectionError(
+                f"SPC {self.host} did not connect to FlexC port "
+                f"{self.port} within {CONNECT_TIMEOUT:.0f}s"
+            ) from err
+
+    async def _start_server(self) -> None:
+        """Start the local FlexC TCP receiver."""
+        if self._closed:
+            raise FlexCConnectionError("FlexC client is closed")
+
+        self._server = await asyncio.start_server(
+            self._handle_client,
+            host="0.0.0.0",
+            port=self.port,
+        )
+
+        sockets: tuple[Any, ...] = tuple(self._server.sockets or ())
+        listeners = ", ".join(str(sock.getsockname()) for sock in sockets)
+
+        _LOGGER.info(
+            "FlexC receiver listening on %s for SPC %s",
+            listeners,
+            self.host,
+        )
+
+    async def _handle_client(
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+    ) -> None:
+        """Handle one SPC FlexC TCP connection."""
+        peer = writer.get_extra_info("peername")
+        peer_host = str(peer[0]) if peer else ""
+
+        if self.host and peer_host != self.host:
+            _LOGGER.warning(
+                "Rejecting FlexC connection from unexpected host %s (expected %s)",
+                peer_host,
+                self.host,
+            )
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        if self._writer is not None and self._writer is not writer:
+            # A new TCP session invalidates the command issued on the old one.
+            # Fail it immediately, before processing a new POLL or DATA frame.
+            if self._pending_reply is not None and not self._pending_reply.done():
+                self._pending_reply.set_exception(
+                    FlexCConnectionError("FlexC session replaced during command")
+                )
+            _LOGGER.info(
+                "Replacing existing FlexC connection with new connection from %s",
+                peer_host,
+            )
+            self._local_close_reasons[self._writer] = "replaced by a new SPC connection"
+            self._writer.close()
+
+        self._session_generation += 1
+        generation = self._session_generation
+        connection_started_at = asyncio.get_running_loop().time()
+        self._reader = reader
+        self._writer = writer
+        self._session_identity = None
+        self._session_poll_identity_seen = False
+        self._assigned_spt_account = None
+        self._reported_identity_changes.clear()
+        self._command_context = None
+        self._context_event.clear()
+        self._awaiting_poll_after_event = False
+        self._event_resync_started_at = None
+
+        _LOGGER.info(
+            "SPC FlexC TCP connection #%d accepted from %s", generation, peer_host
+        )
+
+        try:
+            while not self._closed:
+                # A silent half-open TCP socket must not hold the listener
+                # indefinitely: SPC normally sends periodic POLL frames.
+                async with asyncio.timeout(FRAME_IDLE_TIMEOUT):
+                    frame = await self._read_frame(reader)
+                message = self._parse_frame(frame)
+
+                if not message["sha1_ok"]:
+                    _LOGGER.warning(
+                        "Ignoring FlexC message 0x%02X with invalid SHA-1",
+                        message["message_id"],
+                    )
+                    continue
+
+                # The old reader can still return a complete buffered frame
+                # after the SPC has already opened a replacement connection.
+                if self._writer is not writer:
+                    break
+
+                self._diagnose_session_identity(message)
+                self._last_message = message
+                self._rct_sequence = message["rct_sequence"]
+
+                await self._handle_message(message)
+
+        except TimeoutError:
+            _LOGGER.warning(
+                "FlexC connection #%d idle for %.0fs; closing stale session",
+                generation,
+                FRAME_IDLE_TIMEOUT,
+            )
+
+        except asyncio.IncompleteReadError as err:
+            if err.partial:
+                _LOGGER.warning(
+                    "FlexC connection lost with partial frame: %s",
+                    err,
+                )
+            else:
+                reason = self._local_close_reasons.pop(writer, None)
+                elapsed = asyncio.get_running_loop().time() - connection_started_at
+                if reason is None:
+                    _LOGGER.info(
+                        "FlexC connection #%d closed by peer %s after %.1fs",
+                        generation,
+                        peer_host,
+                        elapsed,
+                    )
+                else:
+                    _LOGGER.info(
+                        "FlexC connection #%d closed locally after %.1fs: %s",
+                        generation,
+                        elapsed,
+                        reason,
+                    )
+
+        except (ConnectionError, OSError) as err:
+            _LOGGER.warning("FlexC connection lost: %s", err)
+
+        except FlexCProtocolError as err:
+            _LOGGER.warning("FlexC protocol error: %s", err)
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception:
+            _LOGGER.exception("Unexpected FlexC receiver error")
+
+        finally:
+            if self._writer is writer:
+                self._reader = None
+                self._writer = None
+                self.connected = False
+                self._connected_event.clear()
+                self._command_context = None
+                self._context_event.clear()
+                self._awaiting_poll_after_event = False
+                self._event_resync_started_at = None
+
+                if self._pending_reply is not None and not self._pending_reply.done():
+                    self._pending_reply.set_exception(
+                        FlexCConnectionError(
+                            "FlexC connection closed while waiting for a reply"
+                        )
+                    )
+
+                self._pending_reply = None
+
+            writer.close()
+
+            try:
+                await writer.wait_closed()
+            except OSError:
+                pass
+
+    def _diagnose_session_identity(self, message: Mapping[str, Any]) -> None:
+        """Observe session identifiers without rejecting valid FlexC frames.
+
+        Protocol identity semantics vary across message types and firmware;
+        record changes once per field and TCP session until field-tested.
+        """
+        identity = (
+            int(message["spt_account"]),
+            int(message["connection_id"]),
+            int(message["rct_identifier"]),
+        )
+        message_id = int(message["message_id"])
+
+        if self._session_identity is None:
+            if message_id in {
+                MSG_CONNECTION_REQUEST_LEGACY,
+                MSG_CONNECTION_REQUEST,
+            }:
+                self._session_identity = identity
+            return
+
+        # A legacy CONNECT may carry a different connection ID from the
+        # subsequent POLL. Learn the active ID from the first POLL rather
+        # than assuming a receiver-specific constant across SPC panels.
+        # Until that POLL, retain the CONNECT identity for the other fields.
+        if message_id == MSG_POLL and not self._session_poll_identity_seen:
+            self._session_poll_identity_seen = True
+            self._session_identity = (
+                identity[0]
+                if self._session_identity[0] == 0
+                else self._session_identity[0],
+                identity[1],
+                self._session_identity[2],
+            )
+
+        for name, expected, received in zip(
+            ("spt_account", "connection_id", "rct_identifier"),
+            self._session_identity,
+            identity,
+            strict=True,
+        ):
+            if (
+                expected != received
+                and name not in self._reported_identity_changes
+                and (name != "connection_id" or self._session_poll_identity_seen)
+            ):
+                self._reported_identity_changes.add(name)
+                # Identity changes are diagnostic only; do not assume
+                # a particular receiver ID is universal across panels.
+                _LOGGER.warning(
+                    "FlexC session #%d identity changed: field=%s "
+                    "expected=0x%08X received=0x%08X message=0x%02X "
+                    "(diagnostic only; frame accepted)",
+                    self._session_generation,
+                    name,
+                    expected,
+                    received,
+                    int(message["message_id"]),
+                )
+
+    async def _read_frame(
+        self,
+        reader: asyncio.StreamReader,
+    ) -> bytes:
+        """Read one complete FlexC frame."""
+        header = await reader.readexactly(16)
+
+        if header[0] != PROTOCOL_ID:
+            raise FlexCProtocolError(f"Unexpected FlexC protocol ID 0x{header[0]:02X}")
+
+        if header[1] != PROTOCOL_VERSION:
+            raise FlexCProtocolError(f"Unexpected FlexC version 0x{header[1]:02X}")
+
+        length_units = _be16(header[2:4])
+
+        # Empirically validated:
+        # wire length = 64 + (length_units * 16)
+        total_length = 64 + length_units * 16
+
+        if (
+            total_length < 64
+            or total_length > MAX_FRAME_LENGTH
+            or (total_length - 16) % 16
+        ):
+            raise FlexCProtocolError(f"Invalid FlexC frame length {total_length}")
+
+        body = await reader.readexactly(total_length - 16)
+
+        return header + body
+
+    def _parse_frame(self, frame: bytes) -> dict[str, Any]:
+        """Decrypt and parse one FlexC frame."""
+        if len(frame) < 64 or (len(frame) - 16) % 16:
+            raise FlexCProtocolError(
+                f"Invalid encrypted FlexC frame length {len(frame)}"
+            )
+
+        clear = frame[:16]
+
+        plaintext = AES.new(
+            self._key,
+            AES.MODE_CBC,
+            INTERNAL_IV,
+        ).decrypt(frame[16:])
+
+        data_header = plaintext[20:28]
+
+        message: dict[str, Any] = {
+            "wire": frame,
+            "clear": clear,
+            "plain": plaintext,
+            "protocol_id": clear[0],
+            "version": clear[1],
+            "length_units": _be16(clear[2:4]),
+            "connection_id": _be32(clear[4:8]),
+            "spt_sequence": _be32(plaintext[0:4]),
+            "rct_sequence": _be32(plaintext[4:8]),
+            "spt_account": _be32(plaintext[8:12]),
+            "rct_identifier": _be32(plaintext[12:16]),
+            "reserved_20_21": plaintext[16:18],
+            "message_id": plaintext[18],
+            "reserved_23": plaintext[19],
+            "data_header": data_header,
+            "recv_sha1": plaintext[28:48],
+            "app_data": plaintext[48:],
+            "application_length": _be32(data_header[0:4]),
+            "new_application_message": data_header[4] == 1,
+        }
+
+        logical = bytearray(clear + plaintext)
+        logical[44:64] = b"\x00" * 20
+
+        message["calc_sha1"] = hashlib.sha1(logical).digest()
+        message["sha1_ok"] = message["recv_sha1"] == message["calc_sha1"]
+
+        return message
+
+    async def async_get_flexc_ats_status(
+        self,
+        ats_id: int,
+    ) -> dict[str, Any]:
+        """Request and return instantaneous FlexC ATS status."""
+        command = build_flexc_ats_status_command(
+            ats_id,
+            self.command_username,
+            self.command_password,
+        )
+
+        response = await self.async_send_flexml(command)
+
+        return parse_flexc_ats_status(response)
+
+    @staticmethod
+    def _digest_for(
+        clear: bytes,
+        plaintext: bytes | bytearray,
+    ) -> bytes:
+        """Calculate the validated FlexC SHA-1 digest."""
+        logical = bytearray(clear + bytes(plaintext))
+        logical[44:64] = b"\x00" * 20
+        return hashlib.sha1(logical).digest()
+
+    def _encrypt_message(
+        self,
+        clear: bytes,
+        plaintext: bytes | bytearray,
+    ) -> bytes:
+        """Insert SHA-1 and AES encrypt a FlexC message."""
+        plain = bytearray(plaintext)
+
+        plain[28:48] = b"\x00" * 20
+        plain[28:48] = self._digest_for(clear, plain)
+
+        ciphertext = AES.new(
+            self._key,
+            AES.MODE_CBC,
+            INTERNAL_IV,
+        ).encrypt(bytes(plain))
+
+        return clear + ciphertext
+
+    def _account_for_ack(self, request: Mapping[str, Any]) -> int:
+        """Use the assigned ATP account for CONNECT ACK, echo other frames."""
+        if (
+            request.get("message_id")
+            in {MSG_CONNECTION_REQUEST_LEGACY, MSG_CONNECTION_REQUEST}
+            and self._assigned_spt_account is not None
+        ):
+            return self._assigned_spt_account
+        return int(request["spt_account"])
+
+    def _learn_connect_account(self, message: Mapping[str, Any]) -> None:
+        """Assign an ATP account when SPC requests automatic assignment (0)."""
+        account = int(message["spt_account"])
+        if account == 0:
+            account = secrets.randbelow(99_999_998) + 1
+            _LOGGER.info(
+                "FlexC session #%d assigned automatic ATP account %d",
+                self._session_generation,
+                account,
+            )
+        self._assigned_spt_account = account
+
+    def _build_connection_ack(
+        self,
+        request: Mapping[str, Any],
+    ) -> bytes:
+        """Build legacy CONNECTION_ACK 0x01."""
+        clear = bytearray(16)
+
+        clear[0] = request["protocol_id"]
+        clear[1] = request["version"]
+        clear[2:4] = _put16(0)
+        clear[4:8] = _put32(RCT_CONNECTION_ID)
+
+        plain = bytearray(48)
+
+        plain[0:4] = _put32(request["spt_sequence"])
+        plain[4:8] = _put32(INITIAL_RCT_SEQUENCE)
+        # Use the account advertised by this panel, not a captured constant.
+        plain[8:12] = _put32(self._account_for_ack(request))
+        plain[12:16] = _put32(request["rct_identifier"])
+
+        plain[18] = MSG_CONNECTION_ACK_LEGACY
+        plain[20:28] = request["data_header"]
+
+        return self._encrypt_message(bytes(clear), plain)
+
+    def _build_clone_ack(
+        self,
+        request: Mapping[str, Any],
+        reply_id: int,
+    ) -> bytes:
+        """Build a zero-application ACK cloning session fields."""
+        clear = bytearray(request["clear"])
+        clear[2:4] = _put16(0)
+
+        plain = bytearray(48)
+
+        # These semantics were validated against the SPC:
+        # preserve sptSequence exactly.
+        plain[0:4] = _put32(request["spt_sequence"])
+        plain[4:8] = _put32(request["rct_sequence"])
+        plain[8:12] = _put32(self._account_for_ack(request))
+        plain[12:16] = _put32(request["rct_identifier"])
+
+        plain[18] = reply_id
+        plain[20:28] = request["data_header"]
+
+        return self._encrypt_message(bytes(clear), plain)
+
+    def _build_application_buffer(self, command: str) -> bytes:
+        """Build the FLEXML application buffer exactly as tested."""
+        try:
+            command_bytes = command.encode("ascii")
+        except UnicodeEncodeError as err:
+            raise FlexCProtocolError(
+                "FLEXML command must be ASCII serializable"
+            ) from err
+
+        xml_length = len(command_bytes)
+        xml_crc = zlib.crc32(command_bytes) & 0xFFFFFFFF
+
+        header_xml = (
+            '<FLEXML XML_COMPRESS="0" '
+            f'XML_CLEN="{xml_length}" '
+            f'XML_LEN="{xml_length}" '
+            f'XML_CRC="{xml_crc}" '
+            'BIN_LEN="0" BIN_CRC="0" />'
+        )
+
+        raw = header_xml.encode("ascii") + b"\x00" + command_bytes + b"\x00"
+
+        aligned_length = ((len(raw) + 15) // 16) * 16
+
+        # The validated SPCLink-compatible implementation leaves
+        # non-application alignment bytes non-zero/random.
+        application = bytearray(os.urandom(aligned_length))
+        application[: len(raw)] = raw
+
+        return bytes(application)
+
+    def _build_outbound_data(
+        self,
+        last_message: Mapping[str, Any],
+        rct_sequence: int,
+        application: bytes,
+    ) -> bytes:
+        """Build outbound DATA 0x80."""
+        clear = bytearray(16)
+
+        clear[0] = last_message["protocol_id"]
+        clear[1] = last_message["version"]
+        clear[2:4] = _put16(len(application) // 16)
+        clear[4:8] = _put32(last_message["connection_id"])
+
+        plain = bytearray(48 + len(application))
+
+        plain[0:4] = _put32(last_message["spt_sequence"])
+        plain[4:8] = _put32(rct_sequence)
+        plain[8:12] = _put32(last_message["spt_account"])
+        plain[12:16] = _put32(last_message["rct_identifier"])
+
+        plain[18] = MSG_DATA
+
+        # SendData() semantics validated by the successful zone and
+        # PANEL_SUMMARY tests.
+        plain[20:24] = _put32(len(application))
+        plain[24] = 1
+        plain[25:28] = b"\x00\x00\x00"
+
+        plain[48:] = application
+
+        return self._encrypt_message(bytes(clear), plain)
+
+    async def _send_wire(self, wire: bytes) -> None:
+        """Send one FlexC wire frame."""
+        writer = self._writer
+
+        if writer is None or writer.is_closing():
+            raise FlexCConnectionError("No active FlexC TCP connection")
+
+        writer.write(wire)
+        await writer.drain()
+
+    async def _handle_message(
+        self,
+        message: Mapping[str, Any],
+    ) -> None:
+        """Process one validated incoming FlexC message."""
+        message_id = int(message["message_id"])
+        # Observe key management without acknowledging an unsupported rotation.
+        # Never log key material or raw frame contents.
+        if message_id in {MSG_KEY_UPDATE, MSG_KEY_ACK}:
+            _LOGGER.warning(
+                "FlexC key-management message observed: session #%d "
+                "MSG_ID=0x%02X (unsupported; no key change or ACK sent)",
+                self._session_generation,
+                message_id,
+            )
+            return
+
+        # Temporary beta diagnostic: only unusual message types are logged.
+        # Do not log raw application data or credentials.
+        if message_id not in {
+            MSG_CONNECTION_REQUEST_LEGACY,
+            MSG_CONNECTION_REQUEST,
+            MSG_POLL,
+            MSG_EVENT,
+            MSG_EVENT_ACK,
+            MSG_DATA_ACK,
+            MSG_DATA,
+            MSG_ERROR,
+        }:
+            _LOGGER.warning("FlexC RX diagnostic: MSG_ID=0x%02X", message_id)
+        trace = self._active_trace
+        if trace is not None:
+            now = asyncio.get_running_loop().time()
+            if message_id == MSG_DATA_ACK:
+                if trace.ack_at is None:
+                    trace.ack_at = now
+                trace.record("DATA_ACK", now)
+            elif message_id == MSG_DATA:
+                if trace.data_first_at is None:
+                    trace.data_first_at = now
+                trace.data_last_at = now
+                trace.data_frames += 1
+                trace.record("DATA", now)
+            elif message_id == MSG_EVENT:
+                trace.events += 1
+                trace.record("EVENT", now)
+            elif message_id == MSG_POLL:
+                trace.polls += 1
+                trace.record("POLL", now)
+            elif message_id == MSG_ERROR:
+                trace.errors += 1
+                trace.record("ERROR", now)
+            else:
+                trace.unexpected += 1
+                trace.record(f"0x{message_id:02X}", now)
+
+        if message_id == MSG_CONNECTION_REQUEST_LEGACY:
+            self._learn_connect_account(message)
+            await self._send_wire(self._build_connection_ack(message))
+
+            self._rct_sequence = INITIAL_RCT_SEQUENCE
+            self._command_context = None
+            self._context_event.clear()
+            self.connected = True
+            self._connected_event.set()
+
+            _LOGGER.info("FlexC legacy connection handshake completed")
+            return
+
+        if message_id == MSG_CONNECTION_REQUEST:
+            self._learn_connect_account(message)
+            await self._send_wire(
+                self._build_clone_ack(
+                    message,
+                    MSG_CONNECTION_ACK,
+                )
+            )
+
+            self._command_context = None
+            self._context_event.clear()
+            self.connected = True
+            self._connected_event.set()
+
+            _LOGGER.info("FlexC connection handshake completed")
+            return
+
+        if message_id == MSG_POLL:
+            await self._send_wire(
+                self._build_clone_ack(
+                    message,
+                    MSG_POLL_ACK,
+                )
+            )
+
+            self.connected = True
+            self._connected_event.set()
+
+            # A POLL provides a valid synchronization point. If no command is
+            # currently in flight, it can safely seed/refresh the command
+            # context. During an active command, the following DATA reply is
+            # the authoritative context for the next request.
+            if self._pending_reply is None:
+                was_waiting_for_poll = self._awaiting_poll_after_event
+                self._command_context = dict(message)
+                self._rct_sequence = int(message["rct_sequence"])
+                self._awaiting_poll_after_event = False
+                self._context_event.set()
+                if was_waiting_for_poll:
+                    elapsed_ms = (
+                        (
+                            asyncio.get_running_loop().time()
+                            - self._event_resync_started_at
+                        )
+                        * 1000
+                        if self._event_resync_started_at is not None
+                        else None
+                    )
+                    self._event_resync_started_at = None
+                    _LOGGER.debug(
+                        "FlexC context resynchronized from SPC POLL after "
+                        "unsolicited EVENT (session #%d, wait_ms=%s)",
+                        self._session_generation,
+                        round(elapsed_ms, 1) if elapsed_ms is not None else None,
+                    )
+
+                if self._recovery_started_at is not None:
+                    elapsed = (
+                        asyncio.get_running_loop().time() - self._recovery_started_at
+                    )
+                    self._recovery_started_at = None
+                    _LOGGER.info(
+                        "FlexC session restored after %.1fs; fresh POLL received "
+                        "and command context is valid",
+                        elapsed,
+                    )
+
+                session_ready_callback = self._session_ready_callback
+                if (
+                    session_ready_callback is not None
+                    and self._notified_session_generation != self._session_generation
+                ):
+                    self._notified_session_generation = self._session_generation
+                    session_ready_callback(self._session_generation)
+
+            poll_waiter = self._poll_waiter
+
+            if poll_waiter is not None and not poll_waiter.done():
+                poll_waiter.set_result(dict(message))
+
+            return
+
+        if message_id == MSG_EVENT:
+            await self._send_wire(
+                self._build_clone_ack(
+                    message,
+                    MSG_EVENT_ACK,
+                )
+            )
+
+            # An acknowledged EVENT is a fresh panel-originated transport
+            # frame. When no DATA command is in flight, use its validated
+            # sequence fields as the next outbound command context instead of
+            # waiting up to one polling interval for a new POLL. An in-flight
+            # DATA reply remains authoritative for its own command chain.
+            if self._pending_reply is None:
+                self._command_context = dict(message)
+                self._rct_sequence = int(message["rct_sequence"])
+                self._awaiting_poll_after_event = False
+                self._event_resync_started_at = None
+                self._context_event.set()
+                _LOGGER.debug(
+                    "FlexC command context refreshed from acknowledged "
+                    "unsolicited EVENT (session #%d)",
+                    self._session_generation,
+                )
+
+            event = parse_event_payload(bytes(message["app_data"]))
+
+            if event is not None:
+                # Diagnostic only: report identifiers, never raw EVENT attributes.
+                def _event_identifier(key: str) -> int | None:
+                    try:
+                        return int(str(event.get(key)))
+                    except (TypeError, ValueError):
+                        return None
+
+                _LOGGER.debug(
+                    "FlexC EVENT diagnostic: MSG_ID=0x%02X EV_ID=%s "
+                    "ZONE_ID=%s AREA_ID=%s",
+                    message_id,
+                    _event_identifier("EV_ID"),
+                    _event_identifier("ZONE_ID"),
+                    _event_identifier("AREA_ID"),
+                )
+                event_callback = self._event_callback
+
+                if event_callback is not None:
+                    event_callback(event)
+
+            return
+
+        if message_id == MSG_DATA_ACK:
+            # ACK for our outbound DATA command.
+            return
+
+        if message_id == MSG_DATA:
+            await self._send_wire(
+                self._build_clone_ack(
+                    _chunk_ack_source(message, self._data_ack_length(message)),
+                    MSG_DATA_ACK,
+                )
+            )
+
+            # Promote every validated DATA reply to the transport context for
+            # the next FLEXML command.
+            self._command_context = dict(message)
+            self._rct_sequence = int(message["rct_sequence"])
+            self._awaiting_poll_after_event = False
+            self._context_event.set()
+
+            self._handle_incoming_data(message)
+            return
+
+        if message_id == MSG_ERROR:
+            # The current chain is no longer trusted after an explicit FlexC
+            # error. The next command will wait for a fresh POLL.
+            self._command_context = None
+            self._context_event.clear()
+            self._handle_error(message)
+            return
+
+        _LOGGER.debug(
+            "Unhandled valid FlexC message 0x%02X",
+            message_id,
+        )
+
+    def _data_ack_length(self, message: Mapping[str, Any]) -> int | None:
+        """Return the cumulative application bytes to acknowledge for a DATA part."""
+        if "application_length" not in message:
+            return None
+        if message.get("new_application_message"):
+            self._ack_total = int(message["application_length"])
+            self._ack_received = 0
+        if self._ack_total is None:
+            return None
+        part_length = len(message.get("app_data", b""))
+        self._ack_received = min(self._ack_received + part_length, self._ack_total)
+        return self._ack_received
+
+    def _handle_incoming_data(
+        self,
+        message: Mapping[str, Any],
+    ) -> None:
+        """Reassemble an incoming FlexC application message."""
+        # Diagnostic only: header and sizes, never the application data.
+        _LOGGER.debug(
+            "FlexC DATA part: new=%s application_length=%s part_length=%d "
+            "data_header=%s buffered=%d",
+            message.get("new_application_message"),
+            message.get("application_length"),
+            len(message.get("app_data", b"")),
+            bytes(message.get("data_header", b"")).hex(),
+            len(self._response_buffer),
+        )
+        if self._pending_reply is None:
+            _LOGGER.debug("Received unsolicited DATA 0x80 with no pending request")
+            return
+
+        if message["new_application_message"]:
+            self._response_buffer = bytearray()
+            self._response_length = int(message["application_length"])
+
+        if self._response_length is None:
+            _LOGGER.warning("Received FlexC DATA without application length")
+            return
+
+        app_data = bytes(message["app_data"])
+
+        self._response_buffer.extend(app_data)
+
+        if len(self._response_buffer) < self._response_length:
+            return
+
+        logical = bytes(self._response_buffer[: self._response_length])
+
+        _LOGGER.debug(
+            "FlexC DATA reply: logical_length=%d received=%d",
+            self._response_length,
+            len(self._response_buffer),
+        )
+
+        try:
+            response = self._decode_application(logical)
+        except FlexCProtocolError as err:
+            pending = self._pending_reply
+
+            if pending is not None and not pending.done():
+                pending.set_exception(err)
+
+            return
+
+        pending = self._pending_reply
+
+        if pending is not None and not pending.done():
+            pending.set_result(response)
+
+    @staticmethod
+    def _decode_application(application: bytes) -> str:
+        """Extract FLEXML_REPLY from an application buffer."""
+        xml_parts: list[str] = []
+
+        for raw_part in application.split(b"\x00"):
+            raw_part = raw_part.strip()
+
+            if not raw_part.startswith(b"<"):
+                continue
+
+            try:
+                text = raw_part.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+
+            xml_parts.append(text)
+
+        for xml_part in xml_parts:
+            if xml_part.startswith("<FLEXML_REPLY"):
+                return xml_part
+
+        _LOGGER.warning("FlexC DATA without FLEXML_REPLY")
+        _LOGGER.debug(
+            "FlexC DATA without FLEXML_REPLY details: xml_parts=%r raw=%s",
+            xml_parts,
+            application.hex(" "),
+        )
+
+        raise FlexCProtocolError("FlexC DATA reply contained no FLEXML_REPLY")
+
+    def _handle_error(
+        self,
+        message: Mapping[str, Any],
+    ) -> None:
+        """Handle a FlexC ERROR 0xFF."""
+        header = bytes(message["data_header"])
+
+        # The second half of dataHeader carried the compact error
+        # indication in the diagnostics already captured.
+        error_code = _be32(header[4:8])
+
+        # SPC error 54 is an authentication failure. Preserve its distinct
+        # type for callers without exposing credentials or assuming that a
+        # Home Assistant config-entry reauthentication flow is appropriate.
+        error_type = FlexCAuthenticationError if error_code == 54 else FlexCCommandError
+        description = "Authentication failed" if error_code == 54 else "SPC error"
+        error = error_type(
+            f"SPC FlexC {description} (code={error_code}, "
+            f"dataHeader={header.hex(' ').upper()})"
+        )
+
+        pending = self._pending_reply
+
+        if pending is not None and not pending.done():
+            pending.set_exception(error)
+        else:
+            _LOGGER.warning("%s", error)
+
+    @staticmethod
+    def _command_diagnostic_label(command: str) -> str:
+        """Return command names suitable for logs without exposing credentials."""
+        names = list(dict.fromkeys(COMMAND_NAME_PATTERN.findall(command)))
+        if not names:
+            return "unknown"
+        return ",".join(names)
+
+    @staticmethod
+    def _elapsed_ms(start: float, end: float | None) -> str:
+        """Format a relative timestamp without logging payloads."""
+        return "none" if end is None else f"{(end - start) * 1000:.0f}"
+
+    def _log_command_timeout(self, trace: _CommandTrace) -> None:
+        """Emit one INFO-compatible diagnostic only when a command times out."""
+        now = asyncio.get_running_loop().time()
+        _LOGGER.warning(
+            "FlexC timeout diagnostic: command_id=%d command=%s session=%d "
+            "elapsed_ms=%.0f sent_ms=%s ack_ms=%s data_first_ms=%s "
+            "data_last_ms=%s data_frames=%d events=%d polls=%d errors=%d "
+            "other_frames=%d connected=%s pending=%s response_bytes=%d "
+            "expected_bytes=%s timeline=%s",
+            trace.command_id,
+            trace.name,
+            trace.session,
+            (now - trace.started) * 1000,
+            self._elapsed_ms(trace.started, trace.sent_at),
+            self._elapsed_ms(trace.started, trace.ack_at),
+            self._elapsed_ms(trace.started, trace.data_first_at),
+            self._elapsed_ms(trace.started, trace.data_last_at),
+            trace.data_frames,
+            trace.events,
+            trace.polls,
+            trace.errors,
+            trace.unexpected,
+            self.connected,
+            self._pending_reply is not None and not self._pending_reply.done(),
+            len(self._response_buffer),
+            self._response_length,
+            ",".join(trace.timeline),
+        )
+
+    async def async_wait_for_event_resync(self) -> float:
+        """Wait for a required EVENT recovery context without holding caller locks.
+
+        This is an optimization only. async_send_flexml still validates context
+        under the command lock, including when another EVENT races this wait.
+        """
+        if not self._awaiting_poll_after_event:
+            return 0.0
+        started = asyncio.get_running_loop().time()
+        try:
+            async with asyncio.timeout(COMMAND_TIMEOUT):
+                await self._context_event.wait()
+        except TimeoutError as err:
+            raise FlexCConnectionError(
+                "Timeout waiting for fresh FlexC POLL 0x20 after EVENT"
+            ) from err
+        elapsed_ms = (asyncio.get_running_loop().time() - started) * 1000
+        _LOGGER.debug(
+            "FlexC pre-command EVENT resync wait: wait_ms=%.1f",
+            elapsed_ms,
+        )
+        return elapsed_ms
+
+    async def async_send_flexml(self, command: str) -> str:
+        """Send one FLEXML command and return FLEXML_REPLY."""
+        await self.async_ensure_connected()
+
+        async with self._command_lock:
+            # Wait for a fresh context only when connection or recovery has
+            # invalidated it. Otherwise, commands chain from a validated
+            # DATA reply or an acknowledged idle EVENT.
+            if self._command_context is None:
+                waiting_after_event = self._awaiting_poll_after_event
+                wait_started = asyncio.get_running_loop().time()
+                try:
+                    async with asyncio.timeout(COMMAND_TIMEOUT):
+                        await self._context_event.wait()
+                except TimeoutError as err:
+                    raise FlexCConnectionError(
+                        "Timeout waiting for fresh FlexC POLL 0x20"
+                    ) from err
+                finally:
+                    if waiting_after_event:
+                        _LOGGER.debug(
+                            "FlexC command context wait after EVENT: wait_ms=%.1f",
+                            (asyncio.get_running_loop().time() - wait_started) * 1000,
+                        )
+
+            context = self._command_context
+
+            if context is None:
+                raise FlexCConnectionError(
+                    "No valid FlexC command context is available"
+                )
+
+            loop = asyncio.get_running_loop()
+            pending: asyncio.Future[str] = loop.create_future()
+
+            self._trace_counter += 1
+            trace = _CommandTrace(
+                command_id=self._trace_counter,
+                name=self._command_diagnostic_label(command),
+                session=self._session_generation,
+                started=loop.time(),
+            )
+            self._active_trace = trace
+            self._pending_reply = pending
+            command_generation = self._session_generation
+            self._response_buffer = bytearray()
+            self._response_length = None
+
+            application = self._build_application_buffer(command)
+
+            self._rct_sequence = (int(context["rct_sequence"]) + 1) & 0xFFFFFFFF
+
+            wire = self._build_outbound_data(
+                context,
+                self._rct_sequence,
+                application,
+            )
+
+            observed = self._observe_command(command)
+            try:
+                await self._send_wire(wire)
+                trace.sent_at = loop.time()
+                trace.record("SENT", trace.sent_at)
+
+                async with asyncio.timeout(COMMAND_TIMEOUT):
+                    reply = await pending
+                self._finish_observation(observed, reply, None)
+                return reply
+
+            except TimeoutError as err:
+                self._finish_observation(observed, None, "timeout")
+                self._log_command_timeout(trace)
+                if command_generation != self._session_generation:
+                    # The panel already reconnected: never tear down its new
+                    # socket because an earlier session timed out.
+                    raise FlexCConnectionError(
+                        "FlexC session changed while waiting for command reply"
+                    ) from err
+                # Never reuse a context after a command timeout. Tear down the
+                # current socket so the next connection starts from a clean
+                # handshake/POLL synchronization point.
+                self._command_context = None
+                self._context_event.clear()
+                self._recovery_started_at = asyncio.get_running_loop().time()
+                _LOGGER.warning(
+                    "FlexC command %s timed out after %.0fs; invalidating session "
+                    "and waiting for a fresh handshake/POLL",
+                    self._command_diagnostic_label(command),
+                    COMMAND_TIMEOUT,
+                )
+                self.connected = False
+                self._connected_event.clear()
+
+                writer = self._writer
+                self._writer = None
+                self._reader = None
+
+                if writer is not None:
+                    self._local_close_reasons[writer] = "command timeout recovery"
+                    writer.close()
+
+                    try:
+                        await writer.wait_closed()
+                    except (ConnectionError, OSError):
+                        pass
+
+                raise FlexCCommandTimeout(
+                    "Timeout waiting for FlexC FLEXML reply"
+                ) from err
+
+            except FlexCError as err:
+                self._finish_observation(observed, None, type(err).__name__)
+                if command_generation == self._session_generation:
+                    self._command_context = None
+                    self._context_event.clear()
+                raise
+
+            finally:
+                if self._active_trace is trace:
+                    self._active_trace = None
+                if self._pending_reply is pending:
+                    self._pending_reply = None
+
+                self._response_buffer = bytearray()
+                self._response_length = None
+
+    async def async_recover_session(self) -> None:
+        """Wait until a timed-out FlexC session has a fresh command context."""
+        await self.async_ensure_connected()
+
+        if self._command_context is not None:
+            return
+
+        try:
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                await self._context_event.wait()
+        except TimeoutError as err:
+            raise FlexCConnectionError(
+                "FlexC reconnected but no fresh POLL established a command "
+                f"context within {CONNECT_TIMEOUT:.0f}s"
+            ) from err
+
+        if self._command_context is None:
+            raise FlexCConnectionError(
+                "FlexC recovery completed without a valid command context"
+            )
+
+    async def async_get_panel_summary(
+        self,
+    ) -> dict[str, str]:
+        """Request and return PANEL_SUMMARY."""
+        command = build_panel_summary_command(
+            self.command_username,
+            self.command_password,
+        )
+
+        response = await self.async_send_flexml(command)
+
+        return parse_panel_summary(response)
+
+    async def async_get_user_name(self, user_id: int) -> str | None:
+        """Read only the name from SPC user configuration; discard raw response."""
+        command = build_user_config_command(
+            user_id, self.command_username, self.command_password
+        )
+        response = await self.async_send_flexml(command)
+        return parse_user_config_name(response)
+
+    def set_event_callback(
+        self,
+        callback: Callable[[dict[str, str]], None] | None,
+    ) -> None:
+        """Set the callback invoked for validated EVENT 0x60 messages."""
+        self._event_callback = callback
+
+    async def async_get_alert_status(
+        self,
+    ) -> list[dict[str, str]]:
+        """Read current panel alerts."""
+        command = build_alert_status_command(
+            self.command_username,
+            self.command_password,
+        )
+
+        response = await self.async_send_flexml(command)
+
+        return parse_alert_status(response)
+
+    async def async_get_area_status(
+        self,
+        area_ids: Iterable[int],
+    ) -> list[dict[str, str]]:
+        """Request statuses for a collection of SPC areas."""
+        command = build_area_status_batch(
+            area_ids,
+            self.command_username,
+            self.command_password,
+        )
+
+        response = await self.async_send_flexml(command)
+
+        return parse_area_status(response)
+
+    async def async_get_zone_status(
+        self,
+        zone_ids: Iterable[int],
+    ) -> list[dict[str, str]]:
+        """Request statuses for a collection of SPC zones."""
+        command = build_zone_status_batch(
+            zone_ids,
+            self.command_username,
+            self.command_password,
+        )
+
+        response = await self.async_send_flexml(command)
+
+        return parse_zone_status(response)
+
+    async def async_close(self) -> None:
+        """Close the FlexC receiver and current SPC connection."""
+        self._closed = True
+        self.connected = False
+        self._connected_event.clear()
+        self._command_context = None
+        self._context_event.clear()
+
+        if self._pending_reply is not None and not self._pending_reply.done():
+            self._pending_reply.set_exception(
+                FlexCConnectionError("FlexC client closed")
+            )
+
+        self._pending_reply = None
+
+        writer = self._writer
+        self._writer = None
+        self._reader = None
+
+        if writer is not None:
+            writer.close()
+
+            try:
+                await writer.wait_closed()
+            except OSError:
+                pass
+
+        server = self._server
+        self._server = None
+
+        if server is not None:
+            server.close()
+            await server.wait_closed()

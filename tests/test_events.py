@@ -1,0 +1,510 @@
+"""Tests for SPC FlexC event parsing and state updates."""
+
+import pytest
+
+from custom_components.spc_flexc.flexc.events import (
+    apply_area_event,
+    apply_event,
+    apply_panel_event,
+    apply_xbus_event,
+    apply_zone_event,
+    parse_event_payload,
+)
+from custom_components.spc_flexc.models import (
+    AreaState,
+    FaultState,
+    PanelState,
+    XBusDeviceState,
+    ZoneState,
+)
+
+
+def test_parse_event_payload() -> None:
+    """Test parsing a FlexC EVENT payload."""
+    payload = b'<EVENT EV_ID="5336" EV_NAME="RF jamming" />\x00\x00'
+
+    event = parse_event_payload(payload)
+
+    assert event is not None
+    assert event["EV_ID"] == "5336"
+    assert event["EV_NAME"] == "RF jamming"
+
+
+def test_parse_invalid_event_payload() -> None:
+    """Test invalid EVENT payload."""
+    assert parse_event_payload(b"not xml\x00") is None
+
+
+def test_modem_fault_events() -> None:
+    """Test modem fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "6100"}) is True
+    assert faults.modem_1_fault is True
+
+    assert apply_event(faults, {"EV_ID": "6101"}) is True
+    assert faults.modem_1_fault is False
+
+
+def test_modem_line_fault_events() -> None:
+    """Test modem line fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "6106"}) is True
+    assert faults.modem_1_line_fault is True
+
+    assert apply_event(faults, {"EV_ID": "6107"}) is True
+    assert faults.modem_1_line_fault is False
+
+
+def test_xbus_mains_fault_events() -> None:
+    """Test X-BUS mains fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5324"}) is True
+    assert faults.xbus_mains_fault is True
+
+    assert apply_event(faults, {"EV_ID": "5325"}) is True
+    assert faults.xbus_mains_fault is False
+
+
+def test_xbus_battery_fault_events() -> None:
+    """Test X-BUS battery fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5330"}) is True
+    assert faults.xbus_battery_fault is True
+
+    assert apply_event(faults, {"EV_ID": "5331"}) is True
+    assert faults.xbus_battery_fault is False
+
+
+def test_rf_jamming_events() -> None:
+    """Test RF jamming and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5336"}) is True
+    assert faults.rf_jamming is True
+
+    assert apply_event(faults, {"EV_ID": "5337"}) is True
+    assert faults.rf_jamming is False
+
+
+def test_unknown_event() -> None:
+    """Test that an unknown event does not alter fault state."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "9999"}) is False
+
+    assert faults.mains_fault is None
+    assert faults.battery_fault is None
+    assert faults.panel_tamper is None
+    assert faults.modem_1_fault is None
+    assert faults.modem_1_line_fault is None
+    assert faults.rf_jamming is None
+    assert faults.xbus_mains_fault is None
+    assert faults.xbus_battery_fault is None
+
+
+def test_invalid_event_id() -> None:
+    """Test an invalid event ID."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "invalid"}) is False
+
+
+def test_panel_mains_fault_events() -> None:
+    """Test panel 230 V mains fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5000"}) is True
+    assert faults.mains_fault is True
+
+    assert apply_event(faults, {"EV_ID": "5001"}) is True
+    assert faults.mains_fault is False
+
+
+def test_panel_battery_fault_events() -> None:
+    """Test panel battery fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5006"}) is True
+    assert faults.battery_fault is True
+
+    assert apply_event(faults, {"EV_ID": "5007"}) is True
+    assert faults.battery_fault is False
+
+
+def test_panel_tamper_events() -> None:
+    """Test panel enclosure tamper fault and restore events."""
+    faults = FaultState()
+
+    assert apply_event(faults, {"EV_ID": "5206"}) is True
+    assert faults.panel_tamper is True
+
+    assert apply_event(faults, {"EV_ID": "5207"}) is True
+    assert faults.panel_tamper is False
+
+
+def test_engineer_mode_events() -> None:
+    """Test engineer mode event updates."""
+    panel = PanelState()
+
+    assert apply_panel_event(panel, {"EV_ID": "7003"}) is True
+    assert panel.engineer_mode is True
+
+    assert apply_panel_event(panel, {"EV_ID": "7004"}) is True
+    assert panel.engineer_mode is False
+
+
+def test_zone_tamper_events() -> None:
+    """Test zone tamper fault and restore events."""
+    zone = ZoneState(
+        zone_id=7,
+        name="AP sirene intéri",
+        area_id=1,
+    )
+    zones = {7: zone}
+
+    fault_event = {
+        "EV_ID": "1008",
+        "ZONE_ID": "7",
+        "AREA_ID": "1",
+        "ZONE_NAME": "AP sirene intéri",
+        "SIA_CODE": "TA",
+    }
+
+    assert apply_zone_event(zones, fault_event) is True
+    assert zone.event_tamper is True
+    assert zone.last_event == fault_event
+
+    restore_event = {
+        "EV_ID": "1108",
+        "ZONE_ID": "7",
+        "AREA_ID": "1",
+        "ZONE_NAME": "AP sirene intéri",
+        "SIA_CODE": "TR",
+    }
+
+    assert apply_zone_event(zones, restore_event) is True
+    assert zone.event_tamper is False
+    assert zone.last_event == restore_event
+
+
+def test_zone_tamper_unknown_zone_is_ignored() -> None:
+    """Test that a tamper event for an unknown zone is ignored."""
+    zones: dict[int, ZoneState] = {}
+
+    assert (
+        apply_zone_event(
+            zones,
+            {
+                "EV_ID": "1008",
+                "ZONE_ID": "7",
+            },
+        )
+        is False
+    )
+
+    assert zones == {}
+
+
+def test_xbus_tamper_fault_updates_discovered_device() -> None:
+    """Test an X-BUS tamper event updates a uniquely matched discovered device."""
+    device = XBusDeviceState(device_id=1, serial_number="4CADF0DA", name="CLA 1")
+    devices = {"4CADF0DA": device}
+    event = {
+        "EV_ID": "5312",
+        "KEYPAD_ID": "1",
+        "KEYPAD_NAME": "CLA 1",
+        "SIA_ADDRESS": "1",
+        "SIA_CODE": "ES",
+        "CID_CODE": "341",
+        "CID_QUAL": "1",
+    }
+
+    assert apply_xbus_event(devices, event) is True
+    assert device.sia_address == 1
+    assert device.tamper_fault is True
+    assert device.last_event == event
+    assert device.updated_at is not None
+
+
+def test_xbus_event_ignores_ambiguous_branch_local_id() -> None:
+    """Do not attach an event to the wrong device when a local ID is duplicated."""
+    first = XBusDeviceState(device_id=1, serial_number="AAA", name="Same")
+    second = XBusDeviceState(device_id=1, serial_number="BBB", name="Same")
+    devices = {"AAA": first, "BBB": second}
+
+    assert (
+        apply_xbus_event(
+            devices, {"EV_ID": "5316", "KEYPAD_ID": "1", "KEYPAD_NAME": "Same"}
+        )
+        is False
+    )
+    assert first.tamper_isolated is None
+    assert second.tamper_isolated is None
+
+
+def test_xbus_tamper_inhibition_cycle() -> None:
+    """Test X-BUS tamper inhibition events."""
+    device = XBusDeviceState(device_id=1, serial_number="XB1", name="CLA 1")
+    devices = {"XB1": device}
+    assert (
+        apply_xbus_event(
+            devices, {"EV_ID": "5314", "KEYPAD_ID": "1", "KEYPAD_NAME": "CLA 1"}
+        )
+        is True
+    )
+    assert device.tamper_inhibited is True
+    assert (
+        apply_xbus_event(
+            devices, {"EV_ID": "5315", "KEYPAD_ID": "1", "KEYPAD_NAME": "CLA 1"}
+        )
+        is True
+    )
+    assert device.tamper_inhibited is False
+
+
+def test_xbus_tamper_isolation_cycle() -> None:
+    """Test X-BUS tamper isolation without clearing the physical fault."""
+    device = XBusDeviceState(device_id=1, serial_number="XB1", name="CLA 1")
+    devices = {"XB1": device}
+    assert (
+        apply_xbus_event(
+            devices,
+            {
+                "EV_ID": "5312",
+                "KEYPAD_ID": "1",
+                "KEYPAD_NAME": "CLA 1",
+                "SIA_ADDRESS": "1",
+            },
+        )
+        is True
+    )
+    assert device.tamper_fault is True
+    assert (
+        apply_xbus_event(
+            devices, {"EV_ID": "5316", "KEYPAD_ID": "1", "KEYPAD_NAME": "CLA 1"}
+        )
+        is True
+    )
+    assert device.tamper_isolated is True
+    assert (
+        apply_xbus_event(
+            devices, {"EV_ID": "5317", "KEYPAD_ID": "1", "KEYPAD_NAME": "CLA 1"}
+        )
+        is True
+    )
+    assert device.tamper_isolated is False
+    assert device.tamper_fault is True
+
+
+def test_area_full_set_event() -> None:
+    """Test real-time area Full Set event."""
+    areas = {
+        1: AreaState(
+            area_id=1,
+            name="Logis",
+            mode=0,
+        )
+    }
+
+    changed = apply_area_event(
+        areas,
+        {
+            "EV_ID": "3504",
+            "AREA_ID": "1",
+            "AREA_NAME": "Logis",
+        },
+    )
+
+    assert changed is True
+    assert areas[1].mode == 3
+
+
+def test_area_unset_event() -> None:
+    """Test real-time area Unset event."""
+    areas = {
+        1: AreaState(
+            area_id=1,
+            name="Logis",
+            mode=3,
+        )
+    }
+
+    changed = apply_area_event(
+        areas,
+        {
+            "EV_ID": "3501",
+            "AREA_ID": "1",
+            "AREA_NAME": "Logis",
+        },
+    )
+
+    assert changed is True
+    assert areas[1].mode == 0
+
+
+def test_unknown_area_mode_event() -> None:
+    """Test unrelated area event is ignored."""
+    areas = {
+        1: AreaState(
+            area_id=1,
+            name="Logis",
+            mode=0,
+        )
+    }
+
+    changed = apply_area_event(
+        areas,
+        {
+            "EV_ID": "9999",
+            "AREA_ID": "1",
+        },
+    )
+
+    assert changed is False
+    assert areas[1].mode == 0
+
+
+def test_area_mode_event_unknown_area() -> None:
+    """Test area event for an unknown area is ignored."""
+    areas = {
+        1: AreaState(
+            area_id=1,
+            name="Logis",
+            mode=0,
+        )
+    }
+
+    changed = apply_area_event(
+        areas,
+        {
+            "EV_ID": "3504",
+            "AREA_ID": "2",
+        },
+    )
+
+    assert changed is False
+    assert areas[1].mode == 0
+
+
+def test_intrusion_event_cycle_preserves_latched_alarm() -> None:
+    """A restored detector must not silently acknowledge an intrusion."""
+    from custom_components.spc_flexc.flexc.events import apply_area_intrusion_event
+
+    area = AreaState(area_id=1, mode=3)
+    areas = {1: area}
+    assert apply_area_intrusion_event(
+        areas, {"EV_ID": "1000", "AREA_ID": "1", "ZONE_ID": "5"}
+    )
+    assert area.alarm_event_active is True
+    assert area.active_alarm_zones == {5}
+    assert apply_area_intrusion_event(
+        areas, {"EV_ID": "1100", "AREA_ID": "1", "ZONE_ID": "5"}
+    )
+    assert area.alarm_event_active is True
+    assert area.active_alarm_zones == set()
+    assert not apply_area_intrusion_event(
+        areas, {"EV_ID": "9999", "AREA_ID": "1", "ZONE_ID": "5"}
+    )
+
+
+def test_intrusion_event_ignores_unset_area() -> None:
+    from custom_components.spc_flexc.flexc.events import apply_area_intrusion_event
+
+    area = AreaState(area_id=1, mode=0)
+    assert not apply_area_intrusion_event(
+        {1: area}, {"EV_ID": "1000", "AREA_ID": "1", "ZONE_ID": "5"}
+    )
+    assert area.alarm_event_active is False
+
+
+def test_confirmed_entry_zone_intrusion_is_tracked_with_other_zones() -> None:
+    """A 1001 zone alarm joins the latched intrusion list without an input-only event."""
+    from custom_components.spc_flexc.flexc.events import apply_area_intrusion_event
+
+    area = AreaState(area_id=1, mode=3)
+    areas = {1: area}
+    event = lambda ev, zone: {"EV_ID": str(ev), "AREA_ID": "1", "ZONE_ID": str(zone)}
+
+    assert apply_area_intrusion_event(areas, event(1000, 1))
+    assert not apply_area_intrusion_event(areas, event(3512, 2))
+    assert area.triggered_alarm_zones == {1}
+    assert apply_area_intrusion_event(areas, event(1001, 2))
+    assert apply_area_intrusion_event(areas, event(1000, 3))
+    assert area.active_alarm_zones == {1, 2, 3}
+    assert area.triggered_alarm_zones == {1, 2, 3}
+    assert not apply_area_intrusion_event(areas, event(1001, 2))
+    assert apply_area_intrusion_event(areas, event(1100, 1))
+    assert area.active_alarm_zones == {2, 3}
+    assert area.triggered_alarm_zones == {1, 2, 3}
+
+
+def test_confirmed_entry_zone_intrusion_ignored_when_disarmed() -> None:
+    """An intrusion event must not create a new alarm on an unset area."""
+    from custom_components.spc_flexc.flexc.events import apply_area_intrusion_event
+
+    area = AreaState(area_id=1, mode=0)
+    assert not apply_area_intrusion_event(
+        {1: area}, {"EV_ID": "1001", "AREA_ID": "1", "ZONE_ID": "2"}
+    )
+    assert not area.alarm_event_active
+    assert not area.triggered_alarm_zones
+
+
+def test_zone_alarm_zone_tamper_and_trouble_are_independent() -> None:
+    """A zone may report motion, tamper and trouble independently."""
+    zone = ZoneState(zone_id=2, area_id=1, logic_input=1)
+    zones = {2: zone}
+    assert apply_zone_event(zones, {"EV_ID": "1200", "ZONE_ID": "2", "AREA_ID": "1"})
+    assert zone.event_tamper is True
+    assert zone.logic_input == 1
+    assert apply_zone_event(zones, {"EV_ID": "1800", "ZONE_ID": "2", "AREA_ID": "1"})
+    assert zone.event_trouble is True
+    assert apply_zone_event(zones, {"EV_ID": "1300", "ZONE_ID": "2", "AREA_ID": "1"})
+    assert zone.event_tamper is False
+    assert zone.event_trouble is True
+    assert apply_zone_event(zones, {"EV_ID": "1900", "ZONE_ID": "2", "AREA_ID": "1"})
+    assert zone.event_trouble is False
+    assert zone.logic_input == 1
+
+
+def test_zone_alarm_event_wrong_area_is_ignored() -> None:
+    """Do not associate an event with a zone in another area."""
+    zone = ZoneState(zone_id=2, area_id=1)
+    assert not apply_zone_event(
+        {2: zone}, {"EV_ID": "1200", "ZONE_ID": "2", "AREA_ID": "3"}
+    )
+    assert zone.event_tamper is None
+
+
+@pytest.mark.parametrize(
+    ("tamper", "tamper_restore", "trouble", "trouble_restore"),
+    [
+        (1200, 1300, 1800, 1900),
+        (1201, 1301, 1801, 1901),
+        (1203, 1303, 1803, 1903),
+        (1208, 1308, 1808, 1908),
+        (1212, 1312, 1812, 1912),
+        (1215, 1315, 1815, 1915),
+        (1223, 1323, 1823, 1923),
+    ],
+)
+def test_zone_type_event_families(
+    tamper: int, tamper_restore: int, trouble: int, trouble_restore: int
+) -> None:
+    zone = ZoneState(zone_id=5, area_id=2, logic_input=1)
+    zones = {5: zone}
+    for event_id, field, expected in (
+        (tamper, "event_tamper", True),
+        (trouble, "event_trouble", True),
+        (tamper_restore, "event_tamper", False),
+        (trouble_restore, "event_trouble", False),
+    ):
+        assert apply_zone_event(
+            zones, {"EV_ID": str(event_id), "ZONE_ID": "5", "AREA_ID": "2"}
+        )
+        assert getattr(zone, field) is expected
+    assert zone.logic_input == 1

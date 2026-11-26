@@ -1,0 +1,22 @@
+{
+  "domain": "spc_flexc",
+  "name": "SPC FlexC",
+  "after_dependencies": [
+    "lovelace",
+    "panel_custom"
+  ],
+  "codeowners": [
+    "@ToFinToFun"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/ToFinToFun/spc-flexc",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/ToFinToFun/spc-flexc/issues",
+  "requirements": [
+    "pycryptodome>=3.20.0"
+  ],
+  "version": "2.0.0-beta.1"
+}

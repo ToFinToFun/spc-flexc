@@ -1,0 +1,431 @@
+# Contributing to SPC FlexC
+
+Thank you for your interest in contributing to SPC FlexC.
+
+SPC FlexC is a custom Home Assistant integration for Siemens / Vanderbilt /
+Comelit SPC alarm panels using the native FlexC protocol. Contributions are
+welcome, including bug fixes, additional hardware support, FlexC diagnostics,
+event decoding, FLEXML commands, translations, documentation, tests and the\nbundled Lovelace dashboard card.
+
+Because the integration communicates with a security system and can perform
+state-changing operations, protocol and control changes require particular
+care.
+
+---
+
+## Development setup
+
+Clone the repository and install the development dependencies:
+
+```bash
+git clone https://github.com/ToFinToFun/spc-flexc.git
+cd ha-spc-flexc
+```
+
+The project currently targets Python 3.14 for its development commands.\nThe bundled dashboard card uses Node.js 20 or later; its canonical sources\nand build scripts live in `frontend/`.
+
+The Makefile provides the standard workflow:
+
+```bash
+make compile
+make format
+make format-check
+make lint
+make typecheck
+make test
+make coverage
+make card-test
+make check
+make clean
+```
+
+### Formatting, validation and coverage
+
+These commands have different purposes and should not be confused:
+
+- `make format` applies Ruff formatting and may modify Python files;
+- `make check` runs compilation, formatting verification, linting, type
+  checking, Python tests and bundled Lovelace card Node.js regression tests;
+- `make card-test` runs the standalone Node.js checks in `tests/test_lovelace_card.mjs`;
+- `make coverage` runs the test suite with coverage measurement and enforces
+  the repository minimum coverage threshold of 80%.
+
+`make check` does **not** run `make coverage`.
+
+Before submitting a Pull Request or preparing a release, run both (the first also runs `make card-test`):
+
+```bash
+make check
+make coverage
+```
+
+It is also recommended to verify the working tree:
+
+```bash
+git diff --check
+git status
+```
+
+All checks, coverage validation, CI and Hassfest must pass.
+
+Coverage data such as `.coverage` and generated HTML coverage reports are
+local development artifacts and must not be committed.
+
+---
+
+## Bundled SPC FlexC Card development
+
+SPC FlexC Card is distributed **with the integration**, not as an independent
+HACS Dashboard plugin. Its canonical sources, build scripts and package metadata
+are maintained under `frontend/` in this repository. The previous
+`ha-spc-flexc-card` repository is retained for historical reference.
+
+The frontend source modules are in `frontend/src/`. The build concatenates them
+in the order specified by `frontend/scripts/build.mjs` and writes the generated
+distribution to:
+
+```text
+custom_components/spc_flexc/www/ha-spc-flexc-card.js
+```
+
+**Never edit the generated distribution directly.** Edit the appropriate
+`frontend/src/` module, then rebuild from the repository root:
+
+```bash
+cd frontend
+npm run build
+npm run check
+cd ..
+git diff --check
+```
+
+`npm run check` checks JavaScript syntax and verifies that the bundled
+distribution exactly matches the source modules and the version declared in
+`frontend/package.json`. Commit source changes and the generated JavaScript
+together. When adding or removing a module, update `frontend/scripts/build.mjs`,
+`frontend/scripts/check-dist.mjs` and the check script in
+`frontend/package.json`.
+
+### Frontend conventions
+
+- Put responsive and Sections-layout behaviour in
+  `frontend/src/spc-flexc-responsive.js`, using the card's available container
+  width rather than fixed viewport assumptions.
+- Keep technical collections collapsible without hiding fault indications.
+- Translate all user-facing card text through
+  `frontend/src/spc-flexc-i18n.js`; maintain English and French keys together.
+- Keep SPC and Home Assistant entities authoritative for card state. Do not
+  automatically retry arm/disarm, door, inhibition, isolation or Mapping Gate
+  actions after uncertain outcomes.
+- Preserve the existing tabs DOM node and horizontal scroll position across
+  state updates; test Firefox and Chromium at narrow widths and high zoom.
+- Test the graphical card editor, alarm actions, area history, Mapping Gates,
+  doors, X-BUS and responsive layouts when affected by a change.
+
+### Resource registration and migration
+
+The integration serves the bundled file as a Home Assistant HTTP static path
+and registers its Lovelace JavaScript module in storage resource mode.
+Frontend or integration changes must preserve:
+
+- idempotent registration when multiple SPC panels are configured or entries
+  are reloaded;
+- the existing Lovelace resource collection and unrelated resources;
+- migration from a single legacy standalone HACS card resource without
+  duplicating the custom element;
+- clear documentation for YAML-managed Lovelace resources, which require
+  manual resource configuration;
+- browser cache busting when the bundled card version changes.
+
+Test both fresh installations and upgrades from the former standalone card.
+Never directly edit Home Assistant `.storage` files.
+
+### Combined release checklist
+
+Before a stable release, run the Python checks (`make check`,
+`make coverage`) and frontend checks (`cd frontend && npm run build &&
+npm run check`). Review the generated file diff and update
+`frontend/package.json`, `frontend/package-lock.json`, the integration
+`manifest.json`, `README.md` and `CHANGELOG.md` as appropriate.
+
+There is **one integration release** containing the frontend; do not publish
+an independent card release. Verify the resource registration and real-panel
+behaviour before merging or tagging.
+
+---
+
+## Code quality
+
+Contributions should follow the conventions already used by the integration
+and Home Assistant. In particular:
+
+- keep asynchronous operations non-blocking;
+- use Home Assistant entity and coordinator patterns;
+- keep typing annotations accurate;
+- keep Ruff formatting and linting clean;
+- avoid broad exception handlers unless they are deliberately required at a
+  task boundary;
+- add or update tests when changing behaviour;
+- preserve compatibility with the supported Home Assistant version.
+
+Do not disable linting, typing or coverage rules merely to make validation
+pass. Fix the underlying issue whenever possible.
+
+---
+
+## Protocol evidence and hardware validation
+
+SPC installations vary by panel model, firmware and installed modules.
+Undocumented protocol fields must not be assigned a meaning solely from a
+name, a single example or an assumption.
+
+When adding or changing protocol mappings:
+
+1. prefer read-only discovery and status commands first;
+2. retain useful raw diagnostic data when semantics are still uncertain;
+3. validate behaviour against real SPC hardware or reliable protocol evidence;
+4. add regression tests for the validated mapping;
+5. document hardware-dependent limitations where appropriate.
+
+When hardware is not available to the maintainer, sanitised diagnostics or
+protocol captures are especially useful.
+
+---
+
+## FlexC command safety
+
+SPC FlexC controls a real alarm system. Any contribution involving commands
+that change panel state must preserve the safety rules below.
+
+### Never automatically retry state-changing commands
+
+Commands such as Full Set, Unset, Part Set, zone control and Mapping Gate
+control must **never be automatically retried** after an uncertain timeout or
+connection failure.
+
+A timeout does not prove that the SPC panel did not execute the command.
+Automatically resending it could therefore cause an unexpected second
+operation.
+
+Read-only requests may use bounded connection recovery or retry mechanisms
+where appropriate.
+
+### Precheck before arming
+
+Area arming operations must use the SPC change-mode capability precheck before
+sending the state-changing command. If the panel reports that the area is not
+ready, the state-changing command must not be sent.
+
+### Global arming
+
+Global Full Set is implemented as coordinated individual area commands. Before
+the first Full Set command is sent, every relevant area must be prechecked. If
+any precheck fails, the global operation must stop before changing an area.
+
+This reduces the risk of partial arming but cannot make the operation atomic:
+communication or panel state can still change after the prechecks.
+
+### Verify resulting state
+
+Whenever practical, refresh and verify SPC state after a command instead of
+assuming that an accepted command means the requested final state has already
+been reached.
+
+---
+
+## Validated SPC controls
+
+The currently validated area mode mapping is:
+
+| SPC mode | Meaning | Home Assistant |
+|---:|---|---|
+| `0` | Unset | Disarmed |
+| `1` | Part Set A | Armed Home |
+| `2` | Part Set B | Armed Night |
+| `3` | Full Set | Armed Away |
+
+Validated zone control actions are:
+
+| ACTION | Meaning |
+|---:|---|
+| `0` | Inhibit |
+| `1` | De-inhibit |
+| `2` | Isolate |
+| `3` | De-isolate |
+
+Zone isolation and inhibition commands must only be exposed when the
+corresponding SPC capability field explicitly allows the requested operation.
+
+Mapping Gate control uses the SPC-reported Mapping Gate state and verifies the
+result after a state-changing request.
+
+Do not extend these mappings to other SPC objects without evidence that the
+same semantics apply.
+
+---
+
+## SPC change-mode errors
+
+Validated reason codes in the form `1000 + zone_id` identify the zone
+preventing an arming operation. The integration should resolve that zone
+against coordinator data and include both its name and ID when possible.
+
+Validated reason `10006` is handled separately as Engineer / Installer mode.
+Validated reason `2007` represents an active system fault; known active faults
+may be included in the Home Assistant error when available.
+
+Do not invent meanings for unknown reason codes. Preserve the original code and
+return a generic translated error.
+
+---
+
+## Translations
+
+When adding or changing user-visible strings, keep these files consistent:
+
+```text
+custom_components/spc_flexc/strings.json
+custom_components/spc_flexc/translations/en.json
+custom_components/spc_flexc/translations/fr.json
+```
+
+Translation keys and placeholders must match across files and languages.
+
+---
+
+## Tests
+
+Behaviour changes should include tests whenever practical. Regression tests are
+particularly important for protocol parsing, coordinator updates, entity
+creation, alarm control, zone control, Mapping Gates, X-BUS discovery, event
+processing and error handling.
+
+For a quick test run:
+
+```bash
+make test
+```
+
+For final validation, use both commands:
+
+```bash
+make check
+make coverage
+```
+
+The CI coverage threshold is a minimum, not a target to satisfy with artificial
+tests. Prefer tests that exercise meaningful behaviour and failure paths.
+
+---
+
+## Testing against a real SPC panel
+
+Real-panel testing is extremely valuable for FlexC changes, but must be done
+carefully. Start with read-only commands whenever possible.
+
+Before testing a state-changing command:
+
+- confirm the target object and its current state;
+- confirm that another method of controlling the alarm is available;
+- understand whether the command can trigger an alarm or other physical action;
+- avoid automatic retries;
+- verify the resulting state directly from SPC.
+
+Never assume that a command timeout means the command was not executed.
+
+---
+
+## Diagnostics and additional hardware
+
+Additional diagnostic fields are welcome when they provide useful information.
+Confirm that a field is actually returned by SPC and that its meaning is
+supported by evidence before exposing it as a normal Home Assistant entity.
+
+Use diagnostic entities or raw diagnostics for specialised or uncertain data,
+handle absent optional fields gracefully, and do not assume that RF, modem,
+X-BUS or expansion hardware exists on every installation.
+
+---
+
+## Security and sensitive information
+
+Never include real credentials or private installation data in source code,
+tests, Issues, Pull Requests, logs, screenshots or documentation.
+
+This includes FlexC AES-256 keys, Command Profile passwords, SPC user PINs,
+installer codes, authentication tokens and private infrastructure details.
+Inspect and redact diagnostics and captures before publishing them.
+
+---
+
+## Reporting bugs and feature requests
+
+Please use GitHub Issues. For bug reports, include whenever possible:
+
+- SPC panel model and firmware version;
+- SPC FlexC integration version;
+- Home Assistant version;
+- steps to reproduce the problem;
+- relevant sanitised logs and diagnostics.
+
+For significant protocol or state-changing features, opening an Issue before a
+large implementation is recommended so that protocol evidence, Home Assistant
+mapping and safety constraints can be established first.
+
+---
+
+## Pull requests
+
+Before opening a Pull Request:
+
+1. update your branch from `main`;
+2. run `make format` if needed;
+3. add or update meaningful tests;
+4. update documentation for user-visible behaviour;
+5. run `make check`;
+6. run `make coverage`;
+7. run `git diff --check` and, for frontend changes, `cd frontend && npm run build && npm run check`;
+8. make sure no credentials, captures or generated coverage data are present.
+
+Keep Pull Requests focused on one logical change whenever possible.
+
+Use short, descriptive commit messages such as:
+
+```text
+Add Mapping Gate control
+Test FlexC connection lifecycle
+Document SPC FlexC v1.1.0
+```
+
+---
+
+## Documentation
+
+Update `README.md` when a contribution changes installation, configuration,
+available entities, alarm behaviour, controls, diagnostics or known
+limitations. Update `CHANGELOG.md` for user-visible changes intended for a
+release.
+
+---
+
+## Code of conduct
+
+Be respectful and constructive when participating in the project. Technical
+disagreements are welcome; personal attacks are not.
+
+---
+
+## Disclaimer
+
+SPC FlexC is an independent open-source project. It is not affiliated with,
+endorsed by, or supported by Siemens, Vanderbilt, Comelit or Home Assistant.
+Contributors are responsible for testing changes carefully before using them on
+a live alarm installation.
+
+---
+
+## License
+
+By contributing to SPC FlexC, you agree that your contributions will be
+licensed under the same license as the project. See [LICENSE](LICENSE) for
+details.

@@ -1,0 +1,1283 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SPC FlexC",
+        "description": "Configure the local FlexC receiver.",
+        "data": {
+          "host": "SPC address",
+          "port": "FlexC port",
+          "encryption_key": "AES-256 key",
+          "command_username": "Command username",
+          "command_password": "Command password",
+          "engineer_username": "Engineer username (optional)",
+          "engineer_password": "Engineer password (optional)"
+        },
+        "data_description": {
+          "host": "IP address of the SPC panel on your network.",
+          "port": "TCP port this integration listens on; the panel connects to it (Communications → FlexC → ATS in the panel).",
+          "encryption_key": "The 64-hex-digit AES-256 key of the FlexC ATS on the panel.",
+          "command_username": "FlexC command login of the ATS (Communications → FlexC → Command Profile). Its command profile decides what Home Assistant may do: read status, control doors, areas and outputs, manage users and codes, calendars and more. A function whose command the profile does not allow is shown as not allowed in the Capabilities sensor.",
+          "command_password": "Password of the command login above.",
+          "engineer_username": "Optional engineer (installer) login. Only needed to enter and exit full engineer mode from Home Assistant, and for functions that need engineer mode (zone configuration). An engineer login can change the whole panel configuration; leave empty unless you need this.",
+          "engineer_password": "Password of the engineer login above."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure SPC FlexC",
+        "description": "Update the SPC FlexC connection and command credentials.",
+        "data": {
+          "host": "SPC address",
+          "port": "FlexC port",
+          "encryption_key": "AES-256 key",
+          "command_username": "Command username",
+          "command_password": "Command password",
+          "engineer_username": "Engineer username (optional)",
+          "engineer_password": "Engineer password (optional)"
+        },
+        "data_description": {
+          "host": "IP address of the SPC panel on your network.",
+          "port": "TCP port this integration listens on; the panel connects to it (Communications → FlexC → ATS in the panel).",
+          "encryption_key": "The 64-hex-digit AES-256 key of the FlexC ATS on the panel.",
+          "command_username": "FlexC command login of the ATS (Communications → FlexC → Command Profile). Its command profile decides what Home Assistant may do: read status, control doors, areas and outputs, manage users and codes, calendars and more. A function whose command the profile does not allow is shown as not allowed in the Capabilities sensor.",
+          "command_password": "Password of the command login above.",
+          "engineer_username": "Optional engineer (installer) login. Only needed to enter and exit full engineer mode from Home Assistant, and for functions that need engineer mode (zone configuration). An engineer login can change the whole panel configuration; leave empty unless you need this.",
+          "engineer_password": "Password of the engineer login above."
+        }
+      }
+    }
+  },
+  "entity": {
+    "lock": {
+      "door_lock": {
+        "name": "Door {door_id} {door_name} – Lock"
+      }
+    },
+    "binary_sensor": {
+      "xbus_tamper_fault": {
+        "name": "Tamper fault"
+      },
+      "xbus_tamper_inhibited": {
+        "name": "Inhibition"
+      },
+      "xbus_tamper_isolated": {
+        "name": "Isolation"
+      },
+      "internal_bells": {
+        "name": "Internal bells"
+      },
+      "external_bells": {
+        "name": "External bells"
+      },
+      "engineer_mode": {
+        "name": "Engineer mode"
+      },
+      "mains_fault": {
+        "name": "230 V mains fault"
+      },
+      "battery_fault": {
+        "name": "Panel battery fault"
+      },
+      "panel_tamper": {
+        "name": "Panel tamper"
+      },
+      "modem_1_fault": {
+        "name": "Modem 1 fault"
+      },
+      "modem_1_line_fault": {
+        "name": "Modem 1 line fault"
+      },
+      "rf_jamming": {
+        "name": "RF jamming"
+      },
+      "xbus_mains_fault": {
+        "name": "X-BUS mains fault"
+      },
+      "xbus_battery_fault": {
+        "name": "X-BUS battery fault"
+      },
+      "atp_fault": {
+        "name": "{atp_name} fault"
+      },
+      "flexc_connection": {
+        "name": "FlexC connection"
+      },
+      "door_entry_granted": {
+        "name": "Door {door_id} {door_name} – Entry granted"
+      },
+      "system_alert_mains_fault": {
+        "name": "System alert: Mains fault"
+      },
+      "system_alert_battery_fault": {
+        "name": "System alert: Battery fault"
+      },
+      "system_alert_psu_fault": {
+        "name": "System alert: PSU fault"
+      },
+      "system_alert_aux_fuse_fault": {
+        "name": "System alert: Aux fuse fault"
+      },
+      "system_alert_external_bell_fuse_fault": {
+        "name": "System alert: External bell fuse fault"
+      },
+      "system_alert_internal_bell_fuse_fault": {
+        "name": "System alert: Internal bell fuse fault"
+      },
+      "system_alert_bell_tamper": {
+        "name": "System alert: Bell tamper"
+      },
+      "system_alert_cabinet_tamper": {
+        "name": "System alert: Cabinet tamper"
+      },
+      "system_alert_aux_tamper_1": {
+        "name": "System alert: Aux tamper 1"
+      },
+      "system_alert_aux_tamper_2": {
+        "name": "System alert: Aux tamper 2"
+      },
+      "system_alert_antenna_tamper": {
+        "name": "System alert: Antenna tamper"
+      },
+      "system_alert_rf_jamming": {
+        "name": "System alert: RF jamming"
+      },
+      "system_alert_fail_to_communicate": {
+        "name": "System alert: Fail to communicate"
+      },
+      "system_alert_xbus_cable_fault": {
+        "name": "System alert: X-BUS cable fault"
+      },
+      "system_alert_code_tamper": {
+        "name": "System alert: Code tamper"
+      },
+      "system_alert_ethernet_link": {
+        "name": "System alert: Ethernet link fault"
+      },
+      "system_alert_network_fault": {
+        "name": "System alert: Network fault"
+      },
+      "ethernet": {
+        "name": "Ethernet"
+      },
+      "door_open": {
+        "name": "Door {door_id} {door_name} – Door contact (DPS)"
+      },
+      "zone_tamper": {
+        "name": "Zone {zone_id} {zone_name} – Tamper"
+      },
+      "zone_trouble": {
+        "name": "Zone {zone_id} {zone_name} – Trouble"
+      },
+      "door_exit_button": {
+        "name": "Door {door_id} {door_name} – Exit button (DRS)",
+        "state": {
+          "off": "Normal",
+          "on": "Active"
+        }
+      },
+      "zone": {
+        "name": "Zone {zone_id} {zone_name}"
+      }
+    },
+    "sensor": {
+      "active_alerts": {
+        "name": "Active alerts"
+      },
+      "panel_settings": {
+        "name": "Panel settings"
+      },
+      "users": {
+        "name": "Users"
+      },
+      "capabilities": {
+        "name": "Capabilities"
+      },
+      "user_profiles": {
+        "name": "User profiles"
+      },
+      "clock_offset": {
+        "name": "Clock offset"
+      },
+      "configuration_changed": {
+        "name": "Configuration changed"
+      },
+      "users_changed": {
+        "name": "Users changed"
+      },
+      "xbus_aux_voltage": {
+        "name": "Auxiliary voltage"
+      },
+      "xbus_aux_current": {
+        "name": "Auxiliary current"
+      },
+      "xbus_diagnostics": {
+        "name": "X-BUS diagnostics"
+      },
+      "xbus_device_id": {
+        "name": "X-BUS device ID"
+      },
+      "xbus_input_count": {
+        "name": "Input count"
+      },
+      "xbus_output_count": {
+        "name": "Output count"
+      },
+      "battery_voltage": {
+        "name": "Battery voltage"
+      },
+      "aux_voltage": {
+        "name": "Aux voltage"
+      },
+      "aux_current": {
+        "name": "Aux current"
+      },
+      "ac_frequency": {
+        "name": "AC frequency"
+      },
+      "last_flexc_event_id": {
+        "name": "Last FlexC event ID"
+      },
+      "ats_active_path": {
+        "name": "{ats_name} active path"
+      },
+      "atp_last_tx_ok": {
+        "name": "{atp_name} last TX successful"
+      },
+      "door_status": {
+        "name": "Door {door_id} {door_name} – Status (raw)"
+      },
+      "door_mode": {
+        "name": "Door {door_id} {door_name} – Mode",
+        "state": {
+          "normal": "Door in normal mode",
+          "blocked": "Door locked (blocked)",
+          "unlocked": "Door unlocked"
+        }
+      },
+      "xbus_device_type": {
+        "name": "Device type"
+      },
+      "xbus_hardware_id": {
+        "name": "Hardware ID"
+      },
+      "xbus_rf_type": {
+        "name": "RF type"
+      },
+      "xbus_rf_version": {
+        "name": "RF version"
+      },
+      "xbus_reader_type": {
+        "name": "Reader type"
+      },
+      "xbus_position_1": {
+        "name": "Position 1"
+      },
+      "xbus_position_2": {
+        "name": "Position 2"
+      },
+      "xbus_psu_type": {
+        "name": "Power supply type"
+      },
+      "xbus_sia_address": {
+        "name": "SIA address"
+      },
+      "xbus_status_raw": {
+        "name": "Raw status"
+      },
+      "xbus_input_raw": {
+        "name": "Raw input"
+      },
+      "xbus_alert_raw": {
+        "name": "Raw alert"
+      },
+      "xbus_inhibit_raw": {
+        "name": "Raw inhibit"
+      },
+      "xbus_isolate_raw": {
+        "name": "Raw isolate"
+      },
+      "wireless_sensor": {
+        "name": "Wireless sensor {radio_id}"
+      },
+      "zone_status": {
+        "name": "Zone {zone_id} {zone_name} – Status",
+        "state": {
+          "normal": "Normal",
+          "active": "Active",
+          "alarm": "Alarm",
+          "tamper": "Tamper",
+          "trouble": "Trouble",
+          "inhibited": "Inhibited",
+          "isolated": "Isolated",
+          "short": "Short circuit",
+          "disconnected": "Disconnected",
+          "masked": "Masked",
+          "dc_substitution": "DC substitution",
+          "missing": "Detector missing",
+          "offline": "Offline"
+        }
+      },
+      "inhibited_isolated": {
+        "name": "Inhibited and isolated"
+      },
+      "xbus_psu_battery_voltage": {
+        "name": "PSU battery voltage"
+      },
+      "xbus_psu_battery_current": {
+        "name": "PSU battery current"
+      },
+      "xbus_psu_output_1_voltage": {
+        "name": "PSU output 1 voltage"
+      },
+      "xbus_psu_output_1_current": {
+        "name": "PSU output 1 current"
+      },
+      "xbus_psu_output_2_voltage": {
+        "name": "PSU output 2 voltage"
+      },
+      "xbus_psu_output_2_current": {
+        "name": "PSU output 2 current"
+      },
+      "xbus_psu_output_3_voltage": {
+        "name": "PSU output 3 voltage"
+      },
+      "xbus_psu_output_3_current": {
+        "name": "PSU output 3 current"
+      },
+      "unknown_cards": {
+        "name": "Unknown cards"
+      },
+      "xbus_status": {
+        "name": "Status",
+        "state": {
+          "ok": "OK",
+          "fault": "Fault",
+          "inhibited": "Inhibited",
+          "isolated": "Isolated"
+        }
+      },
+      "wireless_zone_sensor": {
+        "name": "Zone {zone_id} {zone_name} – Wireless detector"
+      }
+    },
+    "button": {
+      "silence_bells": {
+        "name": "Silence bells"
+      },
+      "flexc_test_call": {
+        "name": "{atp_name} test call"
+      },
+      "open_momentarily": {
+        "name": "Door {door_id} {door_name} – Momentary open"
+      },
+      "open_permanently": {
+        "name": "Door {door_id} {door_name} – Unlock"
+      },
+      "set_normal": {
+        "name": "Door {door_id} {door_name} – Normal"
+      },
+      "lock": {
+        "name": "Door {door_id} {door_name} – Block"
+      },
+      "restore": {
+        "name": "Zone {zone_id} {zone_name} – Restore"
+      }
+    },
+    "switch": {
+      "inhibition": {
+        "name": "Zone {zone_id} {zone_name} – Inhibition"
+      },
+      "isolation": {
+        "name": "Zone {zone_id} {zone_name} – Isolation"
+      },
+      "engineer_mode_control": {
+        "name": "Engineer mode control"
+      },
+      "system_alert_mains_fault_inhibit": {
+        "name": "Inhibit: Mains fault"
+      },
+      "system_alert_mains_fault_isolate": {
+        "name": "Isolate: Mains fault"
+      },
+      "system_alert_battery_fault_inhibit": {
+        "name": "Inhibit: Battery fault"
+      },
+      "system_alert_battery_fault_isolate": {
+        "name": "Isolate: Battery fault"
+      },
+      "system_alert_psu_fault_inhibit": {
+        "name": "Inhibit: PSU fault"
+      },
+      "system_alert_psu_fault_isolate": {
+        "name": "Isolate: PSU fault"
+      },
+      "system_alert_aux_fuse_fault_inhibit": {
+        "name": "Inhibit: Aux fuse fault"
+      },
+      "system_alert_aux_fuse_fault_isolate": {
+        "name": "Isolate: Aux fuse fault"
+      },
+      "system_alert_external_bell_fuse_fault_inhibit": {
+        "name": "Inhibit: External bell fuse fault"
+      },
+      "system_alert_external_bell_fuse_fault_isolate": {
+        "name": "Isolate: External bell fuse fault"
+      },
+      "system_alert_internal_bell_fuse_fault_inhibit": {
+        "name": "Inhibit: Internal bell fuse fault"
+      },
+      "system_alert_internal_bell_fuse_fault_isolate": {
+        "name": "Isolate: Internal bell fuse fault"
+      },
+      "system_alert_bell_tamper_inhibit": {
+        "name": "Inhibit: Bell tamper"
+      },
+      "system_alert_bell_tamper_isolate": {
+        "name": "Isolate: Bell tamper"
+      },
+      "system_alert_cabinet_tamper_inhibit": {
+        "name": "Inhibit: Cabinet tamper"
+      },
+      "system_alert_cabinet_tamper_isolate": {
+        "name": "Isolate: Cabinet tamper"
+      },
+      "system_alert_aux_tamper_1_inhibit": {
+        "name": "Inhibit: Aux tamper 1"
+      },
+      "system_alert_aux_tamper_1_isolate": {
+        "name": "Isolate: Aux tamper 1"
+      },
+      "system_alert_aux_tamper_2_inhibit": {
+        "name": "Inhibit: Aux tamper 2"
+      },
+      "system_alert_aux_tamper_2_isolate": {
+        "name": "Isolate: Aux tamper 2"
+      },
+      "system_alert_antenna_tamper_inhibit": {
+        "name": "Inhibit: Antenna tamper"
+      },
+      "system_alert_antenna_tamper_isolate": {
+        "name": "Isolate: Antenna tamper"
+      },
+      "system_alert_rf_jamming_inhibit": {
+        "name": "Inhibit: RF jamming"
+      },
+      "system_alert_rf_jamming_isolate": {
+        "name": "Isolate: RF jamming"
+      },
+      "system_alert_fail_to_communicate_inhibit": {
+        "name": "Inhibit: Fail to communicate"
+      },
+      "system_alert_fail_to_communicate_isolate": {
+        "name": "Isolate: Fail to communicate"
+      },
+      "system_alert_xbus_cable_fault_inhibit": {
+        "name": "Inhibit: X-BUS cable fault"
+      },
+      "system_alert_xbus_cable_fault_isolate": {
+        "name": "Isolate: X-BUS cable fault"
+      },
+      "system_alert_code_tamper_inhibit": {
+        "name": "Inhibit: Code tamper"
+      },
+      "system_alert_code_tamper_isolate": {
+        "name": "Isolate: Code tamper"
+      },
+      "system_alert_ethernet_link_inhibit": {
+        "name": "Inhibit: Ethernet link fault"
+      },
+      "system_alert_ethernet_link_isolate": {
+        "name": "Isolate: Ethernet link fault"
+      },
+      "system_alert_network_fault_inhibit": {
+        "name": "Inhibit: Network fault"
+      },
+      "system_alert_network_fault_isolate": {
+        "name": "Isolate: Network fault"
+      },
+      "mapping_gate": {
+        "name": "Mapping gate {mg_id} {mg_name}"
+      }
+    },
+    "alarm_control_panel": {
+      "panel_alarm": {
+        "name": "Alarm"
+      },
+      "area": {
+        "name": "Area {area_id} {area_name}"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Calendar {calendar_id} {calendar_name}"
+      }
+    }
+  },
+  "exceptions": {
+    "area_not_ready_engineer": {
+      "message": "Cannot arm {area}: installer/engineer mode is active (SPC reason {reason})."
+    },
+    "area_not_ready_zone": {
+      "message": "Cannot arm {area}: zone {zone} (ID {zone_id}) is not ready (SPC reason {reason})."
+    },
+    "area_not_ready_faults": {
+      "message": "Cannot change the mode of {area}: the area is not ready (SPC reason {reason}). Active faults: {faults}"
+    },
+    "area_not_ready": {
+      "message": "Cannot change the mode of {area}: the area is not ready (SPC reason {reason})."
+    },
+    "partset_a_not_supported": {
+      "message": "{area} does not support Part Set A."
+    },
+    "partset_b_not_supported": {
+      "message": "{area} does not support Part Set B."
+    },
+    "global_arm_incomplete": {
+      "message": "SPC global arming was incomplete. Areas already commanded: {areas}. Error: {error}"
+    },
+    "global_disarm_incomplete": {
+      "message": "SPC global disarming was incomplete. Errors: {errors}"
+    },
+    "no_loaded_entry": {
+      "message": "No loaded SPC FlexC integration was found."
+    },
+    "several_entries": {
+      "message": "There are several SPC FlexC panels; choose one with config_entry_id."
+    },
+    "log_needs_id": {
+      "message": "The {log} log needs an id (door, zone or ATS number)."
+    },
+    "log_read_failed": {
+      "message": "Could not read the {log} log: {error}"
+    },
+    "panel_command_failed": {
+      "message": "The panel did not accept {service}: {error}"
+    },
+    "unknown_calendar": {
+      "message": "The panel has no calendar {calendar_id}."
+    },
+    "invalid_calendar_times": {
+      "message": "Invalid times for {day}: {value}. Use 'HH:MM;HH:MM' periods separated by spaces."
+    }
+  },
+  "services": {
+    "edit_user": {
+      "name": "Edit user",
+      "description": "Changes a panel user's name, profiles or validity dates. The whole record is read first and sent back with only these fields changed; codes and card numbers are kept as they are and never shown.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "profiles": {
+          "name": "Profiles",
+          "description": "List of up to 5 user profile numbers, e.g. [1, 2]."
+        },
+        "valid_from": {
+          "name": "Valid from",
+          "description": "First day the user's codes and cards work (the panel's \"Date limited\"). Give both dates."
+        },
+        "valid_until": {
+          "name": "Valid until",
+          "description": "Last day the user's codes and cards work."
+        },
+        "no_date_limit": {
+          "name": "No date limit",
+          "description": "Remove the validity period."
+        },
+        "card_number": {
+          "name": "Card number",
+          "description": "Card number as the panel's web page shows it; 0 removes the card."
+        },
+        "language": {
+          "name": "Language",
+          "description": "Language of the user (255 = the system language, 7 = Swedish)."
+        },
+        "card_blocked": {
+          "name": "Block card",
+          "description": "Switch the card off for now."
+        },
+        "extended_time": {
+          "name": "Extended time",
+          "description": "Longer door times when this card is used."
+        },
+        "pin_bypass": {
+          "name": "PIN bypass",
+          "description": "The card opens doors with PIN readers without a PIN."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "The card gives access when doors are offline."
+        },
+        "escort": {
+          "name": "Escort",
+          "description": "Cards with this option let cards that need an escort pass."
+        },
+        "custodian": {
+          "name": "Custodian",
+          "description": "First person in and last out of the area."
+        }
+      }
+    },
+    "add_user": {
+      "name": "Add user",
+      "description": "Adds a panel user with a name, profiles and PIN, and saves the configuration. Needs the stored PIN key of this user number: create the user once in the panel and enable PIN management for it; the key stays the same when the user is deleted and added again.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "profiles": {
+          "name": "Profiles",
+          "description": "List of up to 5 user profile numbers, e.g. [1, 2]."
+        },
+        "pin": {
+          "name": "PIN",
+          "description": "4-8 digits."
+        },
+        "valid_from": {
+          "name": "Valid from",
+          "description": "First day the user's codes and cards work (the panel's \"Date limited\"). Give both dates."
+        },
+        "valid_until": {
+          "name": "Valid until",
+          "description": "Last day the user's codes and cards work."
+        },
+        "card_number": {
+          "name": "Card number",
+          "description": "Card number as the panel's web page shows it; 0 removes the card."
+        },
+        "language": {
+          "name": "Language",
+          "description": "Language of the user (255 = the system language, 7 = Swedish)."
+        }
+      }
+    },
+    "delete_user": {
+      "name": "Delete user",
+      "description": "Deletes a panel user and saves the configuration. A stored PIN key is kept, so the user number can be added again.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        }
+      }
+    },
+    "set_calendar": {
+      "name": "Set calendar",
+      "description": "Changes a panel calendar's name and/or which week type (1-3) applies to each week of the year. Week types are given as digits from week 1; weeks not given keep their type.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "calendar_id": {
+          "name": "Calendar",
+          "description": "Panel calendar number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name (1-16 characters)."
+        },
+        "week_types": {
+          "name": "Week types",
+          "description": "Digits 1-3, one per week from week 1, e.g. 1111122222."
+        }
+      }
+    },
+    "set_calendar_week": {
+      "name": "Set calendar week",
+      "description": "Changes the given days of one week type of a panel calendar; days that are left out keep their times. Times use the panel's format: periods 'start;end' separated by spaces, for example '06:00;23:00 05:45;12:00'. An empty text clears the day.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "calendar_id": {
+          "name": "Calendar",
+          "description": "Panel calendar number."
+        },
+        "week_type": {
+          "name": "Week type",
+          "description": "Week type 1, 2 or 3."
+        },
+        "mon": {
+          "name": "Monday",
+          "description": "Periods for Monday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "tue": {
+          "name": "Tuesday",
+          "description": "Periods for Tuesday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "wed": {
+          "name": "Wednesday",
+          "description": "Periods for Wednesday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "thu": {
+          "name": "Thursday",
+          "description": "Periods for Thursday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "fri": {
+          "name": "Friday",
+          "description": "Periods for Friday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "sat": {
+          "name": "Saturday",
+          "description": "Periods for Saturday, e.g. 06:00;23:00. Leave out to keep."
+        },
+        "sun": {
+          "name": "Sunday",
+          "description": "Periods for Sunday, e.g. 06:00;23:00. Leave out to keep."
+        }
+      }
+    },
+    "get_user_status": {
+      "name": "Read user status",
+      "description": "Reads one user's status from the panel: failed PIN attempts, last PIN change, number of PIN changes and user alerts. Contains no codes.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        }
+      }
+    },
+    "get_unknown_cards": {
+      "name": "Read unknown cards",
+      "description": "Reads the cards the panel saw but does not know. ",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        }
+      }
+    },
+    "edit_user_profile": {
+      "name": "Edit user profile",
+      "description": "Changes a user profile's name, areas, calendar or door settings. The whole profile is read first and sent back with only these fields changed.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "profile_id": {
+          "name": "Profile",
+          "description": "User profile number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "areas": {
+          "name": "Areas",
+          "description": "List of area numbers, e.g. [1, 2]. Replaces the current areas."
+        },
+        "calendar": {
+          "name": "Calendar",
+          "description": "Calendar number, 0 for none."
+        },
+        "doors": {
+          "name": "Doors",
+          "description": "Door settings by door number, e.g. {\"3\": \"0\"}; null removes the door from the profile. The meaning of the values is not mapped yet."
+        }
+      }
+    },
+    "add_user_profile": {
+      "name": "Add user profile",
+      "description": "Adds a user profile with a name, areas and calendar.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "profile_id": {
+          "name": "Profile",
+          "description": "New user profile number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "areas": {
+          "name": "Areas",
+          "description": "List of area numbers, e.g. [1]."
+        },
+        "calendar": {
+          "name": "Calendar",
+          "description": "Calendar number, 0 for none."
+        }
+      }
+    },
+    "delete_user_profile": {
+      "name": "Delete user profile",
+      "description": "Deletes a user profile.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "profile_id": {
+          "name": "Profile",
+          "description": "User profile number."
+        }
+      }
+    },
+    "set_pin": {
+      "name": "Set PIN",
+      "description": "Changes a user's PIN. Give the current PIN, or enable PIN management for the user first. The PINs are never stored or logged; the new PIN is read back after the change is saved.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        },
+        "current_pin": {
+          "name": "Current PIN",
+          "description": "The user's PIN now (4-8 digits). Not needed when PIN management is enabled for the user."
+        },
+        "pin": {
+          "name": "New PIN",
+          "description": "4-8 digits."
+        }
+      }
+    },
+    "get_activity": {
+      "name": "Read activity",
+      "description": "Returns the recent activity of the panel, newest first: commands Home Assistant sent, the panel's answers, the events it pushed and new lines of its system and access logs. Names are shown; PINs and card numbers never are.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maximum number of entries."
+        }
+      }
+    },
+    "add_calendar": {
+      "name": "Add calendar",
+      "description": "Adds a panel calendar with a name, week types and the times of week type 1, and saves the configuration. The reference panel allows at most 4 calendars; use the first free number.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "calendar_id": {
+          "name": "Calendar",
+          "description": "Panel calendar number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "week_types": {
+          "name": "Week types",
+          "description": "Digits 1-3, one per week from week 1; missing weeks get week type 1."
+        },
+        "mon": {
+          "name": "Monday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "tue": {
+          "name": "Tuesday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "wed": {
+          "name": "Wednesday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "thu": {
+          "name": "Thursday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "fri": {
+          "name": "Friday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "sat": {
+          "name": "Saturday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        },
+        "sun": {
+          "name": "Sunday",
+          "description": "Week type 1 periods, e.g. 06:00;23:00 (several separated by spaces)."
+        }
+      }
+    },
+    "delete_calendar": {
+      "name": "Delete calendar",
+      "description": "Deletes a panel calendar and saves the configuration. Doors, areas or profiles that use it may lose that setting.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "calendar_id": {
+          "name": "Calendar",
+          "description": "Panel calendar number."
+        }
+      }
+    },
+    "add_calendar_exception": {
+      "name": "Add calendar exception",
+      "description": "Adds an exception day or period with its own times to one or more calendars, and saves the configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Optional; the first free number is used when left out."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "start_date": {
+          "name": "Start date",
+          "description": "First day."
+        },
+        "end_date": {
+          "name": "End date",
+          "description": "Last day; the start date when left out."
+        },
+        "times": {
+          "name": "Times",
+          "description": "Up to 4 periods, e.g. 13:00;14:00 (several separated by spaces); empty = no times that day."
+        },
+        "calendars": {
+          "name": "Calendars",
+          "description": "Calendar numbers the exception applies to, e.g. [1, 3]."
+        }
+      }
+    },
+    "edit_calendar_exception": {
+      "name": "Edit calendar exception",
+      "description": "Changes an exception day; fields not given keep their value. Saves the configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Exception day number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "1-16 characters."
+        },
+        "start_date": {
+          "name": "Start date",
+          "description": "First day."
+        },
+        "end_date": {
+          "name": "End date",
+          "description": "Last day; the start date when left out."
+        },
+        "times": {
+          "name": "Times",
+          "description": "Up to 4 periods, e.g. 13:00;14:00 (several separated by spaces); empty = no times that day."
+        },
+        "calendars": {
+          "name": "Calendars",
+          "description": "Calendar numbers the exception applies to, e.g. [1, 3]."
+        }
+      }
+    },
+    "delete_calendar_exception": {
+      "name": "Delete calendar exception",
+      "description": "Deletes an exception day and saves the configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Exception day number."
+        }
+      }
+    },
+    "get_log": {
+      "name": "Read panel log",
+      "description": "Reads a log from the SPC panel and returns its entries, newest first. Card numbers are never returned.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "log": {
+          "name": "Log",
+          "description": "Which log to read."
+        },
+        "id": {
+          "name": "ID",
+          "description": "Door number for the access log, zone number for the zone log, ATS number for the ATS event log."
+        },
+        "atp": {
+          "name": "ATP",
+          "description": "ATP number within the ATS, for the ATP logs (default 1)."
+        },
+        "limit": {
+          "name": "Limit",
+          "description": "Maximum number of entries to return."
+        }
+      }
+    },
+    "set_clock": {
+      "name": "Set panel clock",
+      "description": "Sets the SPC panel clock to Home Assistant's local time. The command is sent once.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        }
+      }
+    },
+    "clear_alerts": {
+      "name": "Clear system alerts",
+      "description": "Clears all system alerts on the SPC panel. The command is sent once.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        }
+      }
+    },
+    "enable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        },
+        "pin": {
+          "name": "Current PIN",
+          "description": "The user's PIN now (4-8 digits)."
+        }
+      },
+      "name": "Enable PIN management",
+      "description": "Lets Home Assistant change the PIN on this user number without the current PIN. The consent belongs to the number, not the person: it stays when the user is deleted, so a new user on the same number is managed too. Give the current PIN of the user on this number: its key is learned and stored in Home Assistant's private storage (never in logs or attributes). The PIN cannot be checked over FlexC, so a wrong PIN gives a wrong key; the key is confirmed when the user logs in at a keypad with a PIN Home Assistant set."
+    },
+    "disable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "Panel user number."
+        }
+      },
+      "name": "Disable PIN management",
+      "description": "Forgets the stored key of this user number. Changing a PIN on it then needs the current PIN again."
+    },
+    "assign_unknown_card": {
+      "name": "Assign unknown card",
+      "description": "Give a user a card the panel has seen but does not know (like the web page's \"Unknown card\"). The Unknown cards sensor lists them newest first with door, time and card number.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Only needed with several."
+        },
+        "user_id": {
+          "name": "User ID",
+          "description": "The user's number in the panel."
+        },
+        "card_index": {
+          "name": "Unknown card",
+          "description": "Number in the Unknown cards list (1 = newest)."
+        }
+      }
+    },
+    "engineer_login": {
+      "name": "Engineer login",
+      "description": "Logs in as engineer (Programtekniker). The panel must confirm the login is an engineer. The password is kept in memory only, unless remember is set: then it is stored in Home Assistant's configuration (not encrypted).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "username": {
+          "name": "Username",
+          "description": "The engineer's login on the panel."
+        },
+        "password": {
+          "name": "Password",
+          "description": "The engineer's password."
+        },
+        "remember": {
+          "name": "Remember",
+          "description": "Store the login in Home Assistant so it survives restarts. Otherwise it ends after 30 minutes unused or at restart."
+        }
+      }
+    },
+    "engineer_logout": {
+      "name": "Engineer logout",
+      "description": "Logs the engineer out and forgets a remembered password. Refused while the panel is in engineer mode.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        }
+      }
+    },
+    "set_engineer_mode": {
+      "name": "Engineer mode",
+      "description": "Enters or leaves full engineer mode (installer mode) with the engineer login. In engineer mode the panel cannot be set.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "enter": {
+          "name": "Enter",
+          "description": "On enters engineer mode, off leaves it."
+        }
+      }
+    },
+    "get_zone_config": {
+      "name": "Read zone configuration",
+      "description": "Reads a zone's configuration from the panel: type, area, attributes, key-arm function and technical delay.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "zone_id": {
+          "name": "Zone",
+          "description": "Zone number."
+        }
+      }
+    },
+    "edit_zone": {
+      "name": "Change zone",
+      "description": "Changes a zone's configuration on the panel and saves it. Needs the engineer login and the panel in installer mode. Only the fields given are changed.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "zone_id": {
+          "name": "Zone",
+          "description": "Zone number."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New zone description (1-16 characters)."
+        },
+        "type": {
+          "name": "Zone type",
+          "description": "Zone type number as on the web page: 0 Alarm, 1 Entry/exit, 3 Fire, 9 Technical, 11 Key arm, 16 Lock supervision, 12 Unused, and so on."
+        },
+        "area": {
+          "name": "Area",
+          "description": "Area number the zone belongs to."
+        },
+        "technical_delay": {
+          "name": "Technical delay",
+          "description": "Delay before a technical zone triggers, in seconds (0-9999)."
+        },
+        "keyarm_function": {
+          "name": "Key-arm function",
+          "description": "For key-arm zones: 1 Part set A, 2 Part set B, 3 Full set."
+        },
+        "attributes_on": {
+          "name": "Set attributes",
+          "description": "Zone attributes to switch on."
+        },
+        "attributes_off": {
+          "name": "Clear attributes",
+          "description": "Zone attributes to switch off."
+        }
+      }
+    }
+  },
+  "selector": {
+    "log": {
+      "options": {
+        "access": "Access log (door)",
+        "system": "System log",
+        "zone": "Zone log",
+        "ats": "FlexC ATS event log",
+        "ats_network": "FlexC ATS network log",
+        "atp": "FlexC ATP log",
+        "atp_network": "FlexC ATP network log",
+        "wireless": "Wireless log"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "User display names",
+        "description": "One USER_ID=Display name per line (for example 9995=Home Assistant).",
+        "data": {
+          "user_aliases": "User name overrides",
+          "show_in_sidebar": "Show the SPC app in the sidebar",
+          "keep_clock_right": "Keep the panel clock right"
+        },
+        "data_description": {
+          "show_in_sidebar": "All SPC cards with tabs (overview, users, profiles, calendars, logs, activity, system) as a page in Home Assistant's sidebar, for administrators.",
+          "keep_clock_right": "When the panel clock is more than 3 seconds off (a panel that keeps time from the mains drifts), set it to Home Assistant's time, at most once an hour."
+        }
+      },
+      "doors": {
+        "title": "Door controllers",
+        "description": "Which door controller each door is on ({doors}). The panel does not report this over FlexC; its web page shows it under Configuration > Doors, column \"Location\". Auto: the only door controller if there is one, otherwise the door stays on the panel."
+      },
+      "wireless": {
+        "title": "Wireless zones",
+        "description": "Zones on the panel's wireless receiver. The panel does not report this over FlexC; by default every zone that is on no wired board is assumed wireless.",
+        "data": {
+          "wireless_zones": "Wireless zones"
+        }
+      },
+      "radio_ids": {
+        "title": "Wireless detectors",
+        "description": "Radio ID of the detector on each wireless zone, as the panel's web page lists it under Status > Hardware > Wireless status (FlexC does not tell). Leave empty if unknown. Fields: {zones}"
+      }
+    },
+    "error": {
+      "invalid_aliases": "Use one numeric USER_ID=Display name per line."
+    }
+  },
+  "device": {
+    "wireless_receiver": {
+      "name": "Wireless receiver"
+    }
+  }
+}

@@ -1,0 +1,1178 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SPC FlexC",
+        "description": "Configurer le récepteur FlexC local.",
+        "data": {
+          "host": "Adresse SPC",
+          "port": "Port FlexC",
+          "encryption_key": "Clé de chiffrement AES-256",
+          "command_username": "Nom d’utilisateur pour commandes",
+          "command_password": "Mot de passe de commande",
+          "engineer_username": "Utilisateur installateur (facultatif)",
+          "engineer_password": "Mot de passe installateur (facultatif)"
+        },
+        "data_description": {
+          "host": "Adresse IP de la centrale SPC sur votre réseau.",
+          "port": "Port TCP sur lequel l'intégration écoute ; la centrale s'y connecte (Communications → FlexC → ATS).",
+          "encryption_key": "Clé AES-256 (64 chiffres hexadécimaux) de l'ATS FlexC de la centrale.",
+          "command_username": "Identifiant de commande FlexC de l'ATS (Communications → FlexC → Profil de commande). Son profil décide ce que Home Assistant peut faire : lire l'état, piloter portes, secteurs et sorties, gérer utilisateurs et codes, calendriers, etc. Une fonction dont la commande n'est pas autorisée est indiquée comme non autorisée dans le capteur Fonctions.",
+          "command_password": "Mot de passe de l'identifiant de commande ci-dessus.",
+          "engineer_username": "Identifiant installateur facultatif. Nécessaire seulement pour entrer et sortir du mode installateur complet depuis Home Assistant, et pour les fonctions qui l'exigent (configuration des zones). Un installateur peut modifier toute la configuration ; laissez vide si inutile.",
+          "engineer_password": "Mot de passe de l'installateur ci-dessus."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer SPC FlexC",
+        "description": "Modifier la connexion SPC FlexC et les identifiants de commande.",
+        "data": {
+          "host": "Adresse SPC",
+          "port": "Port FlexC",
+          "encryption_key": "Clé de chiffrement AES-256",
+          "command_username": "Nom d’utilisateur pour commandes",
+          "command_password": "Mot de passe de commande",
+          "engineer_username": "Utilisateur installateur (facultatif)",
+          "engineer_password": "Mot de passe installateur (facultatif)"
+        },
+        "data_description": {
+          "host": "Adresse IP de la centrale SPC sur votre réseau.",
+          "port": "Port TCP sur lequel l'intégration écoute ; la centrale s'y connecte (Communications → FlexC → ATS).",
+          "encryption_key": "Clé AES-256 (64 chiffres hexadécimaux) de l'ATS FlexC de la centrale.",
+          "command_username": "Identifiant de commande FlexC de l'ATS (Communications → FlexC → Profil de commande). Son profil décide ce que Home Assistant peut faire : lire l'état, piloter portes, secteurs et sorties, gérer utilisateurs et codes, calendriers, etc. Une fonction dont la commande n'est pas autorisée est indiquée comme non autorisée dans le capteur Fonctions.",
+          "command_password": "Mot de passe de l'identifiant de commande ci-dessus.",
+          "engineer_username": "Identifiant installateur facultatif. Nécessaire seulement pour entrer et sortir du mode installateur complet depuis Home Assistant, et pour les fonctions qui l'exigent (configuration des zones). Un installateur peut modifier toute la configuration ; laissez vide si inutile.",
+          "engineer_password": "Mot de passe de l'installateur ci-dessus."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "xbus_tamper_fault": {
+        "name": "Défaut d’autoprotection"
+      },
+      "xbus_tamper_inhibited": {
+        "name": "Inhibition"
+      },
+      "xbus_tamper_isolated": {
+        "name": "Isolation"
+      },
+      "door_entry_granted": {
+        "name": "Porte {door_id} {door_name} – Accès autorisé"
+      },
+      "door_open": {
+        "name": "Porte {door_id} {door_name} – Contact de porte (DPS)"
+      },
+      "system_alert_mains_fault": {
+        "name": "Alerte système : Défaut secteur"
+      },
+      "system_alert_battery_fault": {
+        "name": "Alerte système : Défaut batterie"
+      },
+      "system_alert_psu_fault": {
+        "name": "Alerte système : Défaut alimentation"
+      },
+      "system_alert_aux_fuse_fault": {
+        "name": "Alerte système : Défaut fusible auxiliaire"
+      },
+      "system_alert_external_bell_fuse_fault": {
+        "name": "Alerte système : Défaut fusible sirène extérieure"
+      },
+      "system_alert_internal_bell_fuse_fault": {
+        "name": "Alerte système : Défaut fusible sirène intérieure"
+      },
+      "system_alert_bell_tamper": {
+        "name": "Alerte système : Autoprotection sirène"
+      },
+      "system_alert_cabinet_tamper": {
+        "name": "Alerte système : Autoprotection coffret"
+      },
+      "system_alert_aux_tamper_1": {
+        "name": "Alerte système : Autoprotection auxiliaire 1"
+      },
+      "system_alert_aux_tamper_2": {
+        "name": "Alerte système : Autoprotection auxiliaire 2"
+      },
+      "system_alert_antenna_tamper": {
+        "name": "Alerte système : Autoprotection antenne"
+      },
+      "system_alert_rf_jamming": {
+        "name": "Alerte système : Brouillage radio"
+      },
+      "system_alert_fail_to_communicate": {
+        "name": "Alerte système : Échec de transmission"
+      },
+      "system_alert_xbus_cable_fault": {
+        "name": "Alerte système : Défaut câble X-BUS"
+      },
+      "system_alert_code_tamper": {
+        "name": "Alerte système : Autoprotection code"
+      },
+      "system_alert_ethernet_link": {
+        "name": "Alerte système : Défaut lien Ethernet"
+      },
+      "system_alert_network_fault": {
+        "name": "Alerte système : Défaut réseau"
+      },
+      "ethernet": {
+        "name": "Ethernet"
+      },
+      "door_exit_button": {
+        "name": "Porte {door_id} {door_name} – Bouton de sortie (DRS)",
+        "state": {
+          "off": "Normal",
+          "on": "Actif"
+        }
+      },
+      "zone_tamper": {
+        "name": "Zone {zone_id} {zone_name} – Autoprotection"
+      },
+      "zone_trouble": {
+        "name": "Zone {zone_id} {zone_name} – Défaut"
+      },
+      "zone": {
+        "name": "Zone {zone_id} {zone_name}"
+      }
+    },
+    "sensor": {
+      "xbus_aux_voltage": {
+        "name": "Tension auxiliaire"
+      },
+      "xbus_aux_current": {
+        "name": "Courant auxiliaire"
+      },
+      "xbus_diagnostics": {
+        "name": "Diagnostics X-BUS"
+      },
+      "xbus_device_id": {
+        "name": "ID du périphérique X-BUS"
+      },
+      "xbus_input_count": {
+        "name": "Nombre d’entrées"
+      },
+      "xbus_output_count": {
+        "name": "Nombre de sorties"
+      },
+      "active_alerts": {
+        "name": "Alertes actives"
+      },
+      "clock_offset": {
+        "name": "Décalage d'horloge"
+      },
+      "configuration_changed": {
+        "name": "Configuration modifiée"
+      },
+      "users_changed": {
+        "name": "Utilisateurs modifiés"
+      },
+      "panel_settings": {
+        "name": "Paramètres de la centrale"
+      },
+      "users": {
+        "name": "Utilisateurs"
+      },
+      "capabilities": {
+        "name": "Fonctions"
+      },
+      "user_profiles": {
+        "name": "Profils utilisateur"
+      },
+      "door_mode": {
+        "name": "Porte {door_id} {door_name} – Mode",
+        "state": {
+          "normal": "Porte en mode normal",
+          "blocked": "Porte verrouillée (bloquée)",
+          "unlocked": "Porte déverrouillée"
+        }
+      },
+      "wireless_sensor": {
+        "name": "Détecteur sans fil {radio_id}"
+      },
+      "zone_status": {
+        "name": "Zone {zone_id} {zone_name} – État",
+        "state": {
+          "normal": "Normal",
+          "active": "Active",
+          "alarm": "Alarme",
+          "tamper": "Autoprotection",
+          "trouble": "Défaut",
+          "inhibited": "Inhibée",
+          "isolated": "Isolée",
+          "short": "Court-circuit",
+          "disconnected": "Coupure",
+          "masked": "Masqué",
+          "dc_substitution": "Substitution CC",
+          "missing": "Détecteur absent",
+          "offline": "Hors ligne"
+        }
+      },
+      "inhibited_isolated": {
+        "name": "Inhibés et isolés"
+      },
+      "xbus_psu_battery_voltage": {
+        "name": "Alimentation tension batterie"
+      },
+      "xbus_psu_battery_current": {
+        "name": "Alimentation courant batterie"
+      },
+      "xbus_psu_output_1_voltage": {
+        "name": "Alimentation sortie 1 tension"
+      },
+      "xbus_psu_output_1_current": {
+        "name": "Alimentation sortie 1 courant"
+      },
+      "xbus_psu_output_2_voltage": {
+        "name": "Alimentation sortie 2 tension"
+      },
+      "xbus_psu_output_2_current": {
+        "name": "Alimentation sortie 2 courant"
+      },
+      "xbus_psu_output_3_voltage": {
+        "name": "Alimentation sortie 3 tension"
+      },
+      "xbus_psu_output_3_current": {
+        "name": "Alimentation sortie 3 courant"
+      },
+      "unknown_cards": {
+        "name": "Badges inconnus"
+      },
+      "xbus_status": {
+        "name": "État",
+        "state": {
+          "ok": "OK",
+          "fault": "Défaut",
+          "inhibited": "Inhibé",
+          "isolated": "Isolé"
+        }
+      },
+      "door_status": {
+        "name": "Porte {door_id} {door_name} – État (brut)"
+      },
+      "wireless_zone_sensor": {
+        "name": "Zone {zone_id} {zone_name} – Détecteur sans fil"
+      }
+    },
+    "button": {
+      "open_momentarily": {
+        "name": "Porte {door_id} {door_name} – Ouverture momentanée"
+      },
+      "open_permanently": {
+        "name": "Porte {door_id} {door_name} – Déverrouiller"
+      },
+      "set_normal": {
+        "name": "Porte {door_id} {door_name} – Normal"
+      },
+      "lock": {
+        "name": "Porte {door_id} {door_name} – Bloquer"
+      },
+      "restore": {
+        "name": "Zone {zone_id} {zone_name} – Restaurer"
+      },
+      "silence_bells": {
+        "name": "Couper les sirènes"
+      },
+      "flexc_test_call": {
+        "name": "Appel de test {atp_name}"
+      }
+    },
+    "switch": {
+      "inhibition": {
+        "name": "Zone {zone_id} {zone_name} – Inhibition"
+      },
+      "isolation": {
+        "name": "Zone {zone_id} {zone_name} – Isolation"
+      },
+      "engineer_mode_control": {
+        "name": "Commande du mode installateur"
+      },
+      "system_alert_mains_fault_inhibit": {
+        "name": "Inhiber: Défaut secteur"
+      },
+      "system_alert_mains_fault_isolate": {
+        "name": "Isoler: Défaut secteur"
+      },
+      "system_alert_battery_fault_inhibit": {
+        "name": "Inhiber: Défaut batterie"
+      },
+      "system_alert_battery_fault_isolate": {
+        "name": "Isoler: Défaut batterie"
+      },
+      "system_alert_psu_fault_inhibit": {
+        "name": "Inhiber: Défaut alimentation"
+      },
+      "system_alert_psu_fault_isolate": {
+        "name": "Isoler: Défaut alimentation"
+      },
+      "system_alert_aux_fuse_fault_inhibit": {
+        "name": "Inhiber: Défaut fusible auxiliaire"
+      },
+      "system_alert_aux_fuse_fault_isolate": {
+        "name": "Isoler: Défaut fusible auxiliaire"
+      },
+      "system_alert_external_bell_fuse_fault_inhibit": {
+        "name": "Inhiber: Défaut fusible sirène extérieure"
+      },
+      "system_alert_external_bell_fuse_fault_isolate": {
+        "name": "Isoler: Défaut fusible sirène extérieure"
+      },
+      "system_alert_internal_bell_fuse_fault_inhibit": {
+        "name": "Inhiber: Défaut fusible sirène intérieure"
+      },
+      "system_alert_internal_bell_fuse_fault_isolate": {
+        "name": "Isoler: Défaut fusible sirène intérieure"
+      },
+      "system_alert_bell_tamper_inhibit": {
+        "name": "Inhiber: Autoprotection sirène"
+      },
+      "system_alert_bell_tamper_isolate": {
+        "name": "Isoler: Autoprotection sirène"
+      },
+      "system_alert_cabinet_tamper_inhibit": {
+        "name": "Inhiber: Autoprotection coffret"
+      },
+      "system_alert_cabinet_tamper_isolate": {
+        "name": "Isoler: Autoprotection coffret"
+      },
+      "system_alert_aux_tamper_1_inhibit": {
+        "name": "Inhiber: Autoprotection auxiliaire 1"
+      },
+      "system_alert_aux_tamper_1_isolate": {
+        "name": "Isoler: Autoprotection auxiliaire 1"
+      },
+      "system_alert_aux_tamper_2_inhibit": {
+        "name": "Inhiber: Autoprotection auxiliaire 2"
+      },
+      "system_alert_aux_tamper_2_isolate": {
+        "name": "Isoler: Autoprotection auxiliaire 2"
+      },
+      "system_alert_antenna_tamper_inhibit": {
+        "name": "Inhiber: Autoprotection antenne"
+      },
+      "system_alert_antenna_tamper_isolate": {
+        "name": "Isoler: Autoprotection antenne"
+      },
+      "system_alert_rf_jamming_inhibit": {
+        "name": "Inhiber: Brouillage radio"
+      },
+      "system_alert_rf_jamming_isolate": {
+        "name": "Isoler: Brouillage radio"
+      },
+      "system_alert_fail_to_communicate_inhibit": {
+        "name": "Inhiber: Échec de transmission"
+      },
+      "system_alert_fail_to_communicate_isolate": {
+        "name": "Isoler: Échec de transmission"
+      },
+      "system_alert_xbus_cable_fault_inhibit": {
+        "name": "Inhiber: Défaut câble X-BUS"
+      },
+      "system_alert_xbus_cable_fault_isolate": {
+        "name": "Isoler: Défaut câble X-BUS"
+      },
+      "system_alert_code_tamper_inhibit": {
+        "name": "Inhiber: Autoprotection code"
+      },
+      "system_alert_code_tamper_isolate": {
+        "name": "Isoler: Autoprotection code"
+      },
+      "system_alert_ethernet_link_inhibit": {
+        "name": "Inhiber: Défaut lien Ethernet"
+      },
+      "system_alert_ethernet_link_isolate": {
+        "name": "Isoler: Défaut lien Ethernet"
+      },
+      "system_alert_network_fault_inhibit": {
+        "name": "Inhiber: Défaut réseau"
+      },
+      "system_alert_network_fault_isolate": {
+        "name": "Isoler: Défaut réseau"
+      },
+      "mapping_gate": {
+        "name": "Mapping gate {mg_id} {mg_name}"
+      }
+    },
+    "lock": {
+      "door_lock": {
+        "name": "Porte {door_id} {door_name} – Serrure"
+      }
+    },
+    "alarm_control_panel": {
+      "area": {
+        "name": "Secteur {area_id} {area_name}"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Calendrier {calendar_id} {calendar_name}"
+      }
+    }
+  },
+  "exceptions": {
+    "area_not_ready_engineer": {
+      "message": "Impossible d’armer {area} : le mode Installateur est actif (raison SPC {reason})."
+    },
+    "area_not_ready_zone": {
+      "message": "Impossible d’armer {area} : la zone « {zone} » (ID {zone_id}) n’est pas prête (raison SPC {reason})."
+    },
+    "area_not_ready_faults": {
+      "message": "Impossible de changer le mode de {area} : le secteur n'est pas prêt (raison SPC {reason}). Défauts actifs : {faults}"
+    },
+    "area_not_ready": {
+      "message": "Impossible de changer le mode de {area} : le secteur n’est pas prêt (raison SPC {reason})."
+    },
+    "partset_a_not_supported": {
+      "message": "{area} ne prend pas en charge la mise en service partielle A."
+    },
+    "partset_b_not_supported": {
+      "message": "{area} ne prend pas en charge la mise en service partielle B."
+    },
+    "global_arm_incomplete": {
+      "message": "La mise en service totale SPC est incomplète. Secteurs déjà commandés : {areas}. Erreur : {error}"
+    },
+    "global_disarm_incomplete": {
+      "message": "La mise hors service totale SPC est incomplète. Erreurs : {errors}"
+    },
+    "no_loaded_entry": {
+      "message": "Aucune intégration SPC FlexC chargée n'a été trouvée."
+    },
+    "several_entries": {
+      "message": "Plusieurs centrales SPC FlexC existent ; choisissez-en une avec config_entry_id."
+    },
+    "log_needs_id": {
+      "message": "Le journal {log} nécessite un identifiant (porte, zone ou ATS)."
+    },
+    "log_read_failed": {
+      "message": "Impossible de lire le journal {log} : {error}"
+    },
+    "panel_command_failed": {
+      "message": "La centrale n'a pas accepté {service} : {error}"
+    },
+    "unknown_calendar": {
+      "message": "La centrale n'a pas de calendrier {calendar_id}."
+    },
+    "invalid_calendar_times": {
+      "message": "Horaires invalides pour {day} : {value}."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Noms d’affichage des utilisateurs",
+        "description": "Une ligne par utilisateur au format ID=Nom (exemple : 9995=Home Assistant).",
+        "data": {
+          "user_aliases": "Alias des utilisateurs",
+          "show_in_sidebar": "Afficher l'app SPC dans la barre latérale",
+          "keep_clock_right": "Garder l'horloge de la centrale à l'heure"
+        },
+        "data_description": {
+          "show_in_sidebar": "Toutes les cartes SPC avec onglets comme page de la barre latérale de Home Assistant, pour les administrateurs.",
+          "keep_clock_right": "Quand l'horloge de la centrale a plus de 3 secondes d'écart, la régler sur l'heure de Home Assistant, au plus une fois par heure."
+        }
+      },
+      "doors": {
+        "title": "Contrôleurs de porte",
+        "description": "Contrôleur de porte de chaque porte ({doors}). La centrale ne l'indique pas via FlexC ; sa page web l'affiche dans Configuration > Portes, colonne « Emplacement ». Auto : le seul contrôleur s'il n'y en a qu'un, sinon la porte reste sous la centrale."
+      },
+      "wireless": {
+        "title": "Zones sans fil",
+        "description": "Zones du récepteur sans fil de la centrale. La centrale ne l'indique pas via FlexC ; par défaut, toute zone sur aucune carte filaire est supposée sans fil.",
+        "data": {
+          "wireless_zones": "Zones sans fil"
+        }
+      },
+      "radio_ids": {
+        "title": "Détecteurs sans fil",
+        "description": "ID radio du détecteur de chaque zone sans fil, tel que la page web de la centrale l'affiche (Status > Matériel > État sans fil). Laisser vide si inconnu. Champs : {zones}"
+      }
+    },
+    "error": {
+      "invalid_aliases": "Saisir une ligne ID numérique=Nom par utilisateur."
+    }
+  },
+  "services": {
+    "get_log": {
+      "name": "Lire un journal de la centrale",
+      "description": "Lit un journal de la centrale SPC et renvoie ses entrées, les plus récentes d'abord. Les numéros de carte ne sont jamais renvoyés.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "log": {
+          "name": "Journal",
+          "description": "Journal à lire."
+        },
+        "id": {
+          "name": "ID",
+          "description": "Numéro de porte pour le journal d'accès, de zone pour le journal de zone, d'ATS pour le journal d'événements ATS."
+        },
+        "limit": {
+          "name": "Limite",
+          "description": "Nombre maximal d'entrées renvoyées."
+        },
+        "atp": {
+          "name": "ATP",
+          "description": "Numéro d'ATP dans l'ATS, pour les journaux ATP (1 par défaut)."
+        }
+      }
+    },
+    "set_clock": {
+      "name": "Régler l'horloge de la centrale",
+      "description": "Règle l'horloge de la centrale SPC sur l'heure locale de Home Assistant. La commande est envoyée une seule fois.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        }
+      }
+    },
+    "clear_alerts": {
+      "name": "Effacer les alertes système",
+      "description": "Efface toutes les alertes système de la centrale SPC. La commande est envoyée une seule fois.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        }
+      }
+    },
+    "set_calendar_week": {
+      "name": "Modifier une semaine de calendrier",
+      "description": "Modifie les jours indiqués d'un type de semaine d'un calendrier de la centrale ; les autres jours sont conservés. Format de la centrale : périodes 'début;fin' séparées par des espaces, par exemple '06:00;23:00'. Un texte vide efface le jour.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "calendar_id": {
+          "name": "Calendrier",
+          "description": "Numéro du calendrier dans la centrale."
+        },
+        "week_type": {
+          "name": "Type de semaine",
+          "description": "Type de semaine 1, 2 ou 3."
+        },
+        "mon": {
+          "name": "Lundi",
+          "description": "Périodes pour lundi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "tue": {
+          "name": "Mardi",
+          "description": "Périodes pour mardi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "wed": {
+          "name": "Mercredi",
+          "description": "Périodes pour mercredi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "thu": {
+          "name": "Jeudi",
+          "description": "Périodes pour jeudi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "fri": {
+          "name": "Vendredi",
+          "description": "Périodes pour vendredi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "sat": {
+          "name": "Samedi",
+          "description": "Périodes pour samedi, ex. 06:00;23:00. Laisser vide pour conserver."
+        },
+        "sun": {
+          "name": "Dimanche",
+          "description": "Périodes pour dimanche, ex. 06:00;23:00. Laisser vide pour conserver."
+        }
+      }
+    },
+    "set_calendar": {
+      "name": "Modifier un calendrier",
+      "description": "Modifie le nom d'un calendrier et/ou le type de semaine (1-3) de chaque semaine de l'année.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "calendar_id": {
+          "name": "Calendrier",
+          "description": "Numéro du calendrier dans la centrale."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouveau nom (1-16 caractères)."
+        },
+        "week_types": {
+          "name": "Types de semaine",
+          "description": "Chiffres 1-3, un par semaine à partir de la semaine 1."
+        }
+      }
+    },
+    "edit_user": {
+      "name": "Modifier un utilisateur",
+      "description": "Modifie le nom, les profils ou les dates de validité d'un utilisateur. L'enregistrement complet est lu puis renvoyé avec seulement ces champs modifiés ; codes et numéros de carte ne sont ni modifiés ni affichés.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1-16 caractères."
+        },
+        "profiles": {
+          "name": "Profils",
+          "description": "Liste de 5 numéros de profil au plus, ex. [1, 2]."
+        },
+        "valid_from": {
+          "name": "Valide du",
+          "description": "Premier jour où les codes et badges de l'utilisateur fonctionnent (« Date limitée » de la centrale). Indiquer les deux dates."
+        },
+        "valid_until": {
+          "name": "Valide jusqu'au",
+          "description": "Dernier jour où les codes et badges de l'utilisateur fonctionnent."
+        },
+        "no_date_limit": {
+          "name": "Sans limite de date",
+          "description": "Supprimer la période de validité."
+        },
+        "card_number": {
+          "name": "Numéro de badge",
+          "description": "Numéro de badge tel que la page web de la centrale l'affiche ; 0 supprime le badge."
+        },
+        "language": {
+          "name": "Langue",
+          "description": "Langue de l'utilisateur (255 = langue du système)."
+        },
+        "card_blocked": {
+          "name": "Bloquer le badge",
+          "description": "Désactiver le badge pour l'instant."
+        },
+        "extended_time": {
+          "name": "Temps prolongé",
+          "description": "Temps de porte plus longs avec ce badge."
+        },
+        "pin_bypass": {
+          "name": "Contournement PIN",
+          "description": "Le badge ouvre les portes à lecteur PIN sans code."
+        },
+        "priority": {
+          "name": "Priorité",
+          "description": "Le badge donne accès quand les portes sont hors ligne."
+        },
+        "escort": {
+          "name": "Escorte",
+          "description": "Les badges avec cette option laissent passer les badges qui exigent une escorte."
+        },
+        "custodian": {
+          "name": "Gardien",
+          "description": "Première personne à entrer et dernière à sortir."
+        }
+      }
+    },
+    "add_user": {
+      "name": "Ajouter un utilisateur",
+      "description": "Ajoute un utilisateur avec un nom, des profils et un code, puis enregistre la configuration. Nécessite la clé enregistrée de ce numéro : créez l'utilisateur une fois dans la centrale et activez la gestion du code ; la clé reste la même après suppression et ajout.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "profiles": {
+          "name": "Profils",
+          "description": "Liste de 5 numéros de profil au plus, ex. [1, 2]."
+        },
+        "pin": {
+          "name": "Code",
+          "description": "4 à 8 chiffres."
+        },
+        "valid_from": {
+          "name": "Valide du",
+          "description": "Premier jour où les codes et badges de l'utilisateur fonctionnent (« Date limitée » de la centrale). Indiquer les deux dates."
+        },
+        "valid_until": {
+          "name": "Valide jusqu'au",
+          "description": "Dernier jour où les codes et badges de l'utilisateur fonctionnent."
+        },
+        "card_number": {
+          "name": "Numéro de badge",
+          "description": "Numéro de badge tel que la page web de la centrale l'affiche ; 0 supprime le badge."
+        },
+        "language": {
+          "name": "Langue",
+          "description": "Langue de l'utilisateur (255 = langue du système)."
+        }
+      }
+    },
+    "delete_user": {
+      "name": "Supprimer un utilisateur",
+      "description": "Supprime un utilisateur et enregistre la configuration. Une clé enregistrée est conservée, le numéro peut être ajouté à nouveau.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur."
+        }
+      }
+    },
+    "get_user_status": {
+      "name": "Lire l'état d'un utilisateur",
+      "description": "Lit l'état d'un utilisateur : tentatives de code erronées, dernier changement de code, nombre de changements et alertes. Ne contient aucun code.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        }
+      }
+    },
+    "get_unknown_cards": {
+      "name": "Lire les cartes inconnues",
+      "description": "Lit les cartes vues par la centrale mais inconnues. Les numéros de carte sont masqués. Non testé sur une centrale.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        }
+      }
+    },
+    "edit_user_profile": {
+      "name": "Modifier un profil utilisateur",
+      "description": "Modifie le nom, les secteurs, le calendrier ou les portes d'un profil. Le profil complet est lu puis renvoyé avec seulement ces champs modifiés.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Numéro du profil utilisateur."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "areas": {
+          "name": "Secteurs",
+          "description": "Liste de numéros de secteur, ex. [1, 2]. Remplace les secteurs actuels."
+        },
+        "calendar": {
+          "name": "Calendrier",
+          "description": "Numéro de calendrier, 0 pour aucun."
+        },
+        "doors": {
+          "name": "Portes",
+          "description": "Réglages par numéro de porte, ex. {\"3\": \"0\"} ; null retire la porte du profil. La signification des valeurs n'est pas encore connue."
+        }
+      }
+    },
+    "add_user_profile": {
+      "name": "Ajouter un profil utilisateur",
+      "description": "Ajoute un profil avec un nom, des secteurs et un calendrier.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Numéro du nouveau profil."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "areas": {
+          "name": "Secteurs",
+          "description": "Liste de numéros de secteur, ex. [1]."
+        },
+        "calendar": {
+          "name": "Calendrier",
+          "description": "Numéro de calendrier, 0 pour aucun."
+        }
+      }
+    },
+    "delete_user_profile": {
+      "name": "Supprimer un profil utilisateur",
+      "description": "Supprime un profil utilisateur.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "profile_id": {
+          "name": "Profil",
+          "description": "Numéro du profil utilisateur."
+        }
+      }
+    },
+    "set_pin": {
+      "name": "Changer le code",
+      "description": "Change le code d'un utilisateur. Indiquez le code actuel, ou activez d'abord la gestion du code pour cet utilisateur. Les codes ne sont jamais enregistrés ni journalisés ; le nouveau code est relu après l'enregistrement.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        },
+        "current_pin": {
+          "name": "Code actuel",
+          "description": "Code actuel de l'utilisateur (4 à 8 chiffres). Inutile si la gestion du code est activée."
+        },
+        "pin": {
+          "name": "Nouveau code",
+          "description": "4 à 8 chiffres."
+        }
+      }
+    },
+    "enable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        },
+        "pin": {
+          "name": "Code actuel",
+          "description": "Code actuel de l'utilisateur (4 à 8 chiffres)."
+        }
+      },
+      "name": "Activer la gestion du code",
+      "description": "Permet à Home Assistant de changer le code de ce numéro d'utilisateur sans le code actuel. Le consentement vaut pour le numéro, pas pour la personne : il reste après la suppression de l'utilisateur, un nouvel utilisateur sur ce numéro est donc aussi géré. Indiquez le code actuel de l'utilisateur sur ce numéro : sa clé est calculée et enregistrée dans le stockage privé de Home Assistant (jamais dans les journaux ou attributs). Le code ne peut pas être vérifié via FlexC ; la clé est confirmée quand l'utilisateur se connecte au clavier avec un code défini par Home Assistant."
+    },
+    "disable_pin_management": {
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        }
+      },
+      "name": "Désactiver la gestion du code",
+      "description": "Oublie la clé enregistrée de ce numéro d'utilisateur. Changer son code demande alors à nouveau le code actuel."
+    },
+    "get_activity": {
+      "name": "Lire l'activité",
+      "description": "Renvoie l'activité récente de la centrale, la plus récente d'abord : commandes envoyées par Home Assistant, réponses de la centrale, événements reçus et nouvelles lignes de ses journaux système et d'accès. Les noms sont affichés ; jamais les codes ni les numéros de carte.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "limit": {
+          "name": "Limite",
+          "description": "Nombre maximal de lignes."
+        }
+      }
+    },
+    "add_calendar": {
+      "name": "Ajouter un calendrier",
+      "description": "Ajoute un calendrier avec un nom, des types de semaine et les horaires du type de semaine 1, puis enregistre la configuration. La centrale de référence autorise 4 calendriers au plus ; utilisez le premier numéro libre.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "calendar_id": {
+          "name": "Calendrier",
+          "description": "Numéro du calendrier dans la centrale."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "week_types": {
+          "name": "Types de semaine",
+          "description": "Chiffres 1 à 3, un par semaine depuis la semaine 1 ; les semaines manquantes prennent le type 1."
+        },
+        "mon": {
+          "name": "Lundi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "tue": {
+          "name": "Mardi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "wed": {
+          "name": "Mercredi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "thu": {
+          "name": "Jeudi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "fri": {
+          "name": "Vendredi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "sat": {
+          "name": "Samedi",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        },
+        "sun": {
+          "name": "Dimanche",
+          "description": "Périodes du type de semaine 1, ex. 06:00;23:00 (plusieurs séparées par des espaces)."
+        }
+      }
+    },
+    "delete_calendar": {
+      "name": "Supprimer un calendrier",
+      "description": "Supprime un calendrier et enregistre la configuration. Les portes, secteurs ou profils qui l'utilisent peuvent perdre ce réglage.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "calendar_id": {
+          "name": "Calendrier",
+          "description": "Numéro du calendrier dans la centrale."
+        }
+      }
+    },
+    "add_calendar_exception": {
+      "name": "Ajouter une exception",
+      "description": "Ajoute un jour ou une période d'exception avec ses horaires à un ou plusieurs calendriers, puis enregistre la configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Facultatif ; le premier numéro libre est utilisé sinon."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "start_date": {
+          "name": "Date de début",
+          "description": "Premier jour."
+        },
+        "end_date": {
+          "name": "Date de fin",
+          "description": "Dernier jour ; la date de début si omise."
+        },
+        "times": {
+          "name": "Horaires",
+          "description": "Jusqu'à 4 périodes, ex. 13:00;14:00 (plusieurs séparées par des espaces) ; vide = aucun horaire ce jour."
+        },
+        "calendars": {
+          "name": "Calendriers",
+          "description": "Calendriers concernés, ex. [1, 3]."
+        }
+      }
+    },
+    "edit_calendar_exception": {
+      "name": "Modifier une exception",
+      "description": "Modifie une exception ; les champs non indiqués gardent leur valeur. Enregistre la configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Numéro de l'exception."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "1 à 16 caractères."
+        },
+        "start_date": {
+          "name": "Date de début",
+          "description": "Premier jour."
+        },
+        "end_date": {
+          "name": "Date de fin",
+          "description": "Dernier jour ; la date de début si omise."
+        },
+        "times": {
+          "name": "Horaires",
+          "description": "Jusqu'à 4 périodes, ex. 13:00;14:00 (plusieurs séparées par des espaces) ; vide = aucun horaire ce jour."
+        },
+        "calendars": {
+          "name": "Calendriers",
+          "description": "Calendriers concernés, ex. [1, 3]."
+        }
+      }
+    },
+    "delete_calendar_exception": {
+      "name": "Supprimer une exception",
+      "description": "Supprime une exception et enregistre la configuration.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "exception_id": {
+          "name": "Exception",
+          "description": "Numéro de l'exception."
+        }
+      }
+    },
+    "assign_unknown_card": {
+      "name": "Attribuer un badge inconnu",
+      "description": "Donner à un utilisateur un badge vu par la centrale mais inconnu. Le capteur Badges inconnus les liste, du plus récent au plus ancien, avec porte, heure et numéro.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Seulement s'il y en a plusieurs."
+        },
+        "user_id": {
+          "name": "ID utilisateur",
+          "description": "Numéro de l'utilisateur dans la centrale."
+        },
+        "card_index": {
+          "name": "Badge inconnu",
+          "description": "Numéro dans la liste Badges inconnus (1 = le plus récent)."
+        }
+      }
+    },
+    "engineer_login": {
+      "name": "Engineer login",
+      "description": "Logs in as engineer (Programtekniker). The panel must confirm the login is an engineer. The password is kept in memory only, unless remember is set: then it is stored in Home Assistant's configuration (not encrypted).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "username": {
+          "name": "Username",
+          "description": "The engineer's login on the panel."
+        },
+        "password": {
+          "name": "Password",
+          "description": "The engineer's password."
+        },
+        "remember": {
+          "name": "Remember",
+          "description": "Store the login in Home Assistant so it survives restarts. Otherwise it ends after 30 minutes unused or at restart."
+        }
+      }
+    },
+    "engineer_logout": {
+      "name": "Engineer logout",
+      "description": "Logs the engineer out and forgets a remembered password. Refused while the panel is in engineer mode.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        }
+      }
+    },
+    "set_engineer_mode": {
+      "name": "Engineer mode",
+      "description": "Enters or leaves full engineer mode (installer mode) with the engineer login. In engineer mode the panel cannot be set.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Panel",
+          "description": "SPC FlexC panel. Needed only when there are several."
+        },
+        "enter": {
+          "name": "Enter",
+          "description": "On enters engineer mode, off leaves it."
+        }
+      }
+    },
+    "get_zone_config": {
+      "name": "Lire la configuration de zone",
+      "description": "Lit la configuration d'une zone sur la centrale : type, secteur, attributs, fonction de mise en service à clé et temporisation technique.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "zone_id": {
+          "name": "Zone",
+          "description": "Numéro de zone."
+        }
+      }
+    },
+    "edit_zone": {
+      "name": "Modifier une zone",
+      "description": "Modifie la configuration d'une zone sur la centrale et l'enregistre. Nécessite la connexion installateur et la centrale en mode installateur. Seuls les champs fournis sont modifiés.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Centrale",
+          "description": "Centrale SPC FlexC. Nécessaire seulement s'il y en a plusieurs."
+        },
+        "zone_id": {
+          "name": "Zone",
+          "description": "Numéro de zone."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouvelle description de zone (1 à 16 caractères)."
+        },
+        "type": {
+          "name": "Type de zone",
+          "description": "Numéro du type de zone comme sur la page web : 0 Alarme, 1 Entrée/sortie, 3 Incendie, 9 Technique, 11 Clé, 16 Surveillance de verrou, 12 Non utilisée, etc."
+        },
+        "area": {
+          "name": "Secteur",
+          "description": "Numéro du secteur de la zone."
+        },
+        "technical_delay": {
+          "name": "Temporisation technique",
+          "description": "Délai avant le déclenchement d'une zone technique, en secondes (0-9999)."
+        },
+        "keyarm_function": {
+          "name": "Fonction à clé",
+          "description": "Pour les zones à clé : 1 MES partielle A, 2 MES partielle B, 3 MES totale."
+        },
+        "attributes_on": {
+          "name": "Activer des attributs",
+          "description": "Attributs de zone à activer."
+        },
+        "attributes_off": {
+          "name": "Désactiver des attributs",
+          "description": "Attributs de zone à désactiver."
+        }
+      }
+    }
+  },
+  "selector": {
+    "log": {
+      "options": {
+        "access": "Journal d'accès (porte)",
+        "system": "Journal système",
+        "zone": "Journal de zone",
+        "ats": "Journal d'événements ATS FlexC",
+        "ats_network": "Journal réseau ATS FlexC",
+        "atp": "Journal ATP FlexC",
+        "atp_network": "Journal réseau ATP FlexC",
+        "wireless": "Journal sans fil"
+      }
+    }
+  },
+  "device": {
+    "wireless_receiver": {
+      "name": "Récepteur sans fil"
+    }
+  }
+}

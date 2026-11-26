@@ -1,0 +1,137 @@
+"""Register the bundled SPC FlexC dashboard card safely."""
+
+import asyncio
+import logging
+import re
+from pathlib import Path
+from urllib.parse import urlsplit
+
+from homeassistant.components.http import StaticPathConfig
+from homeassistant.core import HomeAssistant
+
+_LOGGER = logging.getLogger(__name__)
+_CARD_PATH = "/spc_flexc/ha-spc-flexc-card.js"
+_CARD_FILE = Path(__file__).parent / "www" / "ha-spc-flexc-card.js"
+
+
+def _bundled_card_version() -> str:
+    """Read the card version embedded by the frontend build."""
+    with _CARD_FILE.open(encoding="utf-8") as card:
+        first_line = card.readline()
+    match = re.fullmatch(
+        r'const CARD_VERSION = "([0-9]+[.][0-9]+[.][0-9]+)";\n?', first_line
+    )
+    if match is None:
+        raise ValueError("Bundled SPC FlexC card version is missing or invalid")
+    return match.group(1)
+
+
+_CARD_VERSION = _bundled_card_version()
+_CARD_URL = f"{_CARD_PATH}?v={_CARD_VERSION}"
+_LEGACY_PATHS = {
+    "/hacsfiles/ha-spc-flexc-card/ha-spc-flexc-card.js",
+    "/local/community/ha-spc-flexc-card/ha-spc-flexc-card.js",
+}
+_LOCK_KEY = "spc_flexc_frontend_lock"
+_PATH_KEY = "spc_flexc_frontend_path_registered"
+
+
+async def async_register_card(hass: HomeAssistant) -> None:
+    """Expose and register the bundled card, once per Home Assistant instance."""
+    async with hass.data.setdefault(_LOCK_KEY, asyncio.Lock()):
+        if not hass.data.get(_PATH_KEY):
+            await hass.http.async_register_static_paths(
+                [
+                    StaticPathConfig(
+                        _CARD_PATH,
+                        str(_CARD_FILE),
+                        False,
+                    )
+                ]
+            )
+            hass.data[_PATH_KEY] = True
+
+        lovelace = hass.data.get("lovelace")
+        if lovelace is None:
+            _LOGGER.warning(
+                "Lovelace is not loaded; add %s as a JavaScript module manually",
+                _CARD_URL,
+            )
+            return
+        if lovelace.resource_mode != "storage":
+            _LOGGER.info(
+                "Lovelace resources use YAML; add %s as a module resource",
+                _CARD_URL,
+            )
+            return
+
+        resources = lovelace.resources
+        # Load the collection before any read or mutation. Otherwise early
+        # async_create_item calls can overwrite existing Lovelace resources.
+        if not resources.loaded:
+            await resources.async_load()
+
+        existing = resources.async_items()
+        bundled = [
+            item for item in existing if urlsplit(item["url"]).path == _CARD_PATH
+        ]
+        legacy = [
+            item for item in existing if urlsplit(item["url"]).path in _LEGACY_PATHS
+        ]
+
+        if bundled:
+            for item in bundled:
+                if item["url"] != _CARD_URL or item.get("res_type") != "module":
+                    await resources.async_update_item(
+                        item["id"], {"url": _CARD_URL, "res_type": "module"}
+                    )
+            if legacy:
+                _LOGGER.warning(
+                    "Legacy SPC FlexC Card resources remain installed; "
+                    "remove the standalone HACS card and duplicate resources"
+                )
+            return
+
+        if len(legacy) == 1:
+            await resources.async_update_item(
+                legacy[0]["id"], {"url": _CARD_URL, "res_type": "module"}
+            )
+            _LOGGER.info("Migrated standalone SPC FlexC Card Lovelace resource")
+            return
+        if len(legacy) > 1:
+            _LOGGER.warning(
+                "Multiple legacy SPC FlexC Card resources found; remove duplicates "
+                "before registering %s",
+                _CARD_URL,
+            )
+            return
+
+        await resources.async_create_item({"url": _CARD_URL, "res_type": "module"})
+        _LOGGER.info("Registered bundled SPC FlexC Card %s", _CARD_URL)
+
+
+PANEL_URL_PATH = "spc-flexc"
+_PANEL_KEY = "spc_flexc_panel_registered"
+
+
+async def async_set_panel(hass: HomeAssistant, show: bool) -> None:
+    """Show or hide the SPC app (all SPC cards with tabs) in the sidebar."""
+    from homeassistant.components import frontend
+
+    registered = hass.data.get(_PANEL_KEY, False)
+    if show and not registered:
+        from homeassistant.components import panel_custom
+
+        await panel_custom.async_register_panel(
+            hass,
+            frontend_url_path=PANEL_URL_PATH,
+            webcomponent_name="spc-flexc-panel",
+            sidebar_title="SPC",
+            sidebar_icon="mdi:shield-home",
+            module_url=_CARD_URL,
+            require_admin=True,
+        )
+        hass.data[_PANEL_KEY] = True
+    elif not show and registered:
+        frontend.async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+        hass.data[_PANEL_KEY] = False

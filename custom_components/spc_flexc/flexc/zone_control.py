@@ -1,0 +1,61 @@
+"""Validated FlexC zone-control operations for SPC panels."""
+
+from __future__ import annotations
+
+from .connection import FlexCClient
+from .flexml import build_zone_control_command, parse_zone_control
+
+ZONE_ACTION_INHIBIT = 0
+ZONE_ACTION_DEINHIBIT = 1
+ZONE_ACTION_ISOLATE = 2
+ZONE_ACTION_DEISOLATE = 3
+ZONE_ACTION_RESTORE = 4
+
+
+async def async_set_zone_inhibited(
+    client: FlexCClient,
+    zone_id: int,
+    inhibited: bool,
+) -> None:
+    """Set the validated inhibition state for one SPC zone."""
+    action = ZONE_ACTION_INHIBIT if inhibited else ZONE_ACTION_DEINHIBIT
+    command = build_zone_control_command(
+        zone_id,
+        action,
+        client.command_username,
+        client.command_password,
+    )
+    response = await client.async_send_flexml(command)
+    parse_zone_control(response, zone_id)
+
+
+async def async_restore_zone(
+    client: FlexCClient,
+    zone_id: int,
+) -> None:
+    """Restore one SPC zone when the panel explicitly permits it."""
+    command = build_zone_control_command(
+        zone_id,
+        ZONE_ACTION_RESTORE,
+        client.command_username,
+        client.command_password,
+    )
+    response = await client.async_send_flexml(command)
+    parse_zone_control(response, zone_id)
+
+
+async def async_set_zone_isolated(
+    client: FlexCClient,
+    zone_id: int,
+    isolated: bool,
+) -> None:
+    """Set the validated isolation state for one SPC zone."""
+    action = ZONE_ACTION_ISOLATE if isolated else ZONE_ACTION_DEISOLATE
+    command = build_zone_control_command(
+        zone_id,
+        action,
+        client.command_username,
+        client.command_password,
+    )
+    response = await client.async_send_flexml(command)
+    parse_zone_control(response, zone_id)

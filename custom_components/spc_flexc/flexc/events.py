@@ -1,0 +1,354 @@
+"""FlexC EVENT 0x60 parsing and persistent fault mapping."""
+
+from __future__ import annotations
+
+import html
+import xml.etree.ElementTree as ET
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from typing import Any
+
+from ..models import FaultState, XBusDeviceState
+
+EVENT_STATE_MAP: dict[int, tuple[str, bool]] = {
+    # Panel power.
+    5000: ("mains_fault", True),
+    5001: ("mains_fault", False),
+    # Panel battery.
+    5006: ("battery_fault", True),
+    5007: ("battery_fault", False),
+    # Panel enclosure tamper.
+    5206: ("panel_tamper", True),
+    5207: ("panel_tamper", False),
+    # Modem 1.
+    6100: ("modem_1_fault", True),
+    6101: ("modem_1_fault", False),
+    6106: ("modem_1_line_fault", True),
+    6107: ("modem_1_line_fault", False),
+    # X-BUS.
+    5324: ("xbus_mains_fault", True),
+    5325: ("xbus_mains_fault", False),
+    5330: ("xbus_battery_fault", True),
+    5331: ("xbus_battery_fault", False),
+    # X-BUS radio jamming.
+    5336: ("rf_jamming", True),
+    5337: ("rf_jamming", False),
+}
+
+PANEL_EVENT_STATE_MAP: dict[int, tuple[str, bool]] = {
+    7003: ("engineer_mode", True),
+    7004: ("engineer_mode", False),
+}
+
+AREA_EVENT_MODE_MAP: dict[int, int] = {
+    3501: 0,  # Unset
+    3502: 1,  # PartSet A (observed on SPC4300)
+    3503: 2,  # PartSet B (pending hardware validation)
+    3504: 3,  # Full Set
+}
+
+
+def parse_event_payload(
+    payload: bytes,
+) -> dict[str, str] | None:
+    """Parse one EVENT XML object from a FlexC 0x60 payload."""
+    raw = payload.split(b"\x00", 1)[0].strip()
+
+    if not raw.startswith(b"<EVENT"):
+        return None
+
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        return None
+
+    if root.tag != "EVENT":
+        return None
+
+    return {key: html.unescape(value) for key, value in root.attrib.items()}
+
+
+def apply_event(
+    faults: FaultState,
+    event: Mapping[str, Any],
+) -> bool:
+    """Apply a validated EVENT to persistent fault state.
+
+    Return True when a known fault state changed.
+    """
+    raw_event_id = event.get("EV_ID")
+
+    try:
+        event_id = int(str(raw_event_id))
+    except (TypeError, ValueError):
+        faults.last_event = dict(event)
+        return False
+
+    faults.last_event = dict(event)
+
+    mapping = EVENT_STATE_MAP.get(event_id)
+
+    if mapping is None:
+        return False
+
+    field, value = mapping
+    previous = getattr(faults, field)
+
+    setattr(faults, field, value)
+
+    return previous != value
+
+
+def apply_zone_event(
+    zones: Mapping[int, Any],
+    event: Mapping[str, Any],
+) -> bool:
+    """Apply a zone-specific FlexC EVENT to the matching zone state."""
+
+    raw_event_id = event.get("EV_ID")
+    raw_zone_id = event.get("ZONE_ID")
+
+    try:
+        event_id = int(str(raw_event_id))
+        zone_id = int(str(raw_zone_id))
+    except (TypeError, ValueError):
+        return False
+
+    # SPC zone-event tables define 24 type-specific transitions per family.
+    # Keep these independent from physical zone input and intrusion state.
+    if event_id in (1008, 1108):
+        transition = ("event_tamper", event_id == 1008)
+    elif 1200 <= event_id <= 1223:
+        transition = ("event_tamper", True)
+    elif 1300 <= event_id <= 1323:
+        transition = ("event_tamper", False)
+    elif 1800 <= event_id <= 1823:
+        transition = ("event_trouble", True)
+    elif 1900 <= event_id <= 1923:
+        transition = ("event_trouble", False)
+    else:
+        return False
+    zone = zones.get(zone_id)
+    if zone is None:
+        return False
+    # Never attach an event from another area to a matching zone number.
+    raw_area_id = event.get("AREA_ID")
+    if raw_area_id is not None:
+        try:
+            if zone.area_id is not None and int(str(raw_area_id)) != zone.area_id:
+                return False
+        except (TypeError, ValueError):
+            return False
+    field, value = transition
+    previous = getattr(zone, field)
+    setattr(zone, field, value)
+    zone.last_event = dict(event)
+    return previous != value
+
+
+def apply_panel_event(
+    panel: Any,
+    event: Mapping[str, Any],
+) -> bool:
+    """Apply a panel-level EVENT to PanelState."""
+
+    raw_event_id = event.get("EV_ID")
+
+    try:
+        event_id = int(str(raw_event_id))
+    except (TypeError, ValueError):
+        return False
+
+    mapping = PANEL_EVENT_STATE_MAP.get(event_id)
+
+    if mapping is None:
+        return False
+
+    field, value = mapping
+    previous = getattr(panel, field)
+
+    setattr(panel, field, value)
+
+    return previous != value
+
+
+def apply_xbus_event(
+    devices: dict[str, XBusDeviceState],
+    event: Mapping[str, Any],
+) -> bool:
+    """Apply an X-BUS device EVENT to persistent device state."""
+
+    raw_event_id = event.get("EV_ID")
+    raw_device_id = event.get("KEYPAD_ID")
+
+    try:
+        event_id = int(str(raw_event_id))
+        device_id = int(str(raw_device_id))
+    except (TypeError, ValueError):
+        return False
+
+    # Validated X-BUS keypad tamper events:
+    #
+    # 5312 = physical tamper fault
+    # 5314 = tamper inhibition enabled
+    # 5315 = tamper inhibition disabled
+    # 5316 = fault isolated by a user
+    # 5317 = isolation restored / removed
+    #
+    # IMPORTANT:
+    # 5317 does NOT mean the physical tamper fault is cleared.
+    if event_id not in {5312, 5314, 5315, 5316, 5317}:
+        return False
+
+    # ENETNODE.ID / KEYPAD_ID is branch-local and may be duplicated on
+    # multi-branch panels.  Inventory is keyed by the hardware serial number,
+    # so resolve events against the discovered devices instead of treating the
+    # keypad ID as globally unique.
+    candidates = [
+        device for device in devices.values() if device.device_id == device_id
+    ]
+
+    raw_name = event.get("KEYPAD_NAME")
+    if len(candidates) > 1 and raw_name is not None:
+        named = [device for device in candidates if device.name == str(raw_name)]
+        if named:
+            candidates = named
+
+    raw_sia_address = event.get("SIA_ADDRESS")
+    try:
+        sia_address = int(str(raw_sia_address)) if raw_sia_address is not None else None
+    except (TypeError, ValueError):
+        sia_address = None
+
+    if len(candidates) > 1 and sia_address is not None:
+        addressed = [
+            device for device in candidates if device.sia_address == sia_address
+        ]
+        if addressed:
+            candidates = addressed
+
+    # Do not guess when a branch-local ID still maps to several peripherals.
+    # The periodic STATUS_XBUS reconciliation remains authoritative.
+    if len(candidates) != 1:
+        return False
+
+    device = candidates[0]
+    changed = False
+
+    # Refresh descriptive metadata whenever SPC provides it.
+    raw_name = event.get("KEYPAD_NAME")
+
+    if raw_name is not None:
+        name = str(raw_name)
+
+        if device.name != name:
+            device.name = name
+            changed = True
+
+    raw_sia_address = event.get("SIA_ADDRESS")
+
+    if raw_sia_address is not None:
+        try:
+            sia_address = int(str(raw_sia_address))
+        except (TypeError, ValueError):
+            sia_address = None
+
+        if sia_address is not None and device.sia_address != sia_address:
+            device.sia_address = sia_address
+            changed = True
+
+    if event_id == 5312:
+        if device.tamper_fault is not True:
+            device.tamper_fault = True
+            changed = True
+
+    elif event_id == 5314:
+        if device.tamper_inhibited is not True:
+            device.tamper_inhibited = True
+            changed = True
+
+    elif event_id == 5315:
+        if device.tamper_inhibited is not False:
+            device.tamper_inhibited = False
+            changed = True
+
+    elif event_id == 5316:
+        if device.tamper_isolated is not True:
+            device.tamper_isolated = True
+            changed = True
+
+    elif event_id == 5317 and device.tamper_isolated is not False:
+        device.tamper_isolated = False
+        changed = True
+
+    device.last_event = dict(event)
+    device.updated_at = datetime.now(UTC)
+
+    return changed
+
+
+def apply_area_event(
+    areas: Mapping[int, Any],
+    event: Mapping[str, Any],
+) -> bool:
+    """Apply a validated area mode EVENT to the matching area."""
+
+    raw_event_id = event.get("EV_ID")
+    raw_area_id = event.get("AREA_ID")
+
+    try:
+        event_id = int(str(raw_event_id))
+        area_id = int(str(raw_area_id))
+    except (TypeError, ValueError):
+        return False
+
+    mode = AREA_EVENT_MODE_MAP.get(event_id)
+
+    if mode is None:
+        return False
+
+    area = areas.get(area_id)
+
+    if area is None:
+        return False
+
+    previous = area.mode
+    area.mode = mode
+
+    return previous != mode
+
+
+def apply_area_intrusion_event(
+    areas: Mapping[int, Any], event: Mapping[str, Any]
+) -> bool:
+    """Track validated intrusion/restore events without confusing zone restore with reset."""
+    try:
+        event_id = int(str(event.get("EV_ID")))
+        area_id = int(str(event.get("AREA_ID")))
+        zone_id = int(str(event.get("ZONE_ID")))
+    except (TypeError, ValueError):
+        return False
+    # 1001 is also emitted for a zone confirmed in alarm after entry delay.
+    # Keep zone restores distinct from the alarm acknowledgement.
+    if event_id not in (1000, 1001, 1100):
+        return False
+    area = areas.get(area_id)
+    if area is None:
+        return False
+    previous = (
+        area.alarm_event_active,
+        set(area.active_alarm_zones),
+        set(area.triggered_alarm_zones),
+    )
+    if event_id in (1000, 1001) and area.mode in (1, 2, 3):
+        area.active_alarm_zones.add(zone_id)
+        area.triggered_alarm_zones.add(zone_id)
+        area.alarm_event_active = True
+    elif event_id == 1100:
+        area.active_alarm_zones.discard(zone_id)
+        # A zone restore does not acknowledge or silence an active alarm.
+    return previous != (
+        area.alarm_event_active,
+        area.active_alarm_zones,
+        area.triggered_alarm_zones,
+    )
