@@ -127,8 +127,7 @@ global ID (`0` = local); not confirmed.
 4. A capabilities view listing every function as: works; untested; not
    allowed in the Command Profile; needs the engineer login; not built;
    hardware missing.
-5. Screenshots of the current cards.
-6. Upstream: offer the protocol fixes (handshake account echo, chunked reply
+5. Upstream: offer the protocol fixes (handshake account echo, chunked reply
    acknowledgement) to [minimicro34/ha-spc-flexc](https://github.com/minimicro34/ha-spc-flexc).
 
 Not planned without a backup and great care, because they can switch FlexC
