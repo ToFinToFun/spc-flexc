@@ -481,3 +481,23 @@ async def test_panel_precheck_protocol_failure_is_homeassistant_error(
         with pytest.raises(HomeAssistantError, match="SPC communication failed"):
             await getattr(entity, action)()
         coordinator.async_request_refresh.assert_not_awaited()
+
+
+def test_blocking_faults_use_system_alerts_when_present() -> None:
+    """The panel's system alerts are the current state; events are fallback."""
+    alert = lambda active: SimpleNamespace(active=active, alerted=False)
+    coordinator = SimpleNamespace(
+        data=SimpleNamespace(
+            faults=FaultState(mains_fault=True, battery_fault=None, panel_tamper=True),
+            system_alerts={
+                "mains_fault": alert(False),
+                "battery_fault": alert(True),
+            },
+        )
+    )
+    # mains: alert says no fault; battery: alert says fault;
+    # tamper: no cabinet_tamper alert, so the event state is used.
+    assert _active_blocking_faults(coordinator) == [
+        "panel battery fault",
+        "panel tamper",
+    ]

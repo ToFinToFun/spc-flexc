@@ -1591,3 +1591,55 @@ def test_door_history_keeps_the_newest_and_reads_the_access_log() -> None:
         "unlocked_user_name": "Kommandoprofilan",
     }
     assert coordinator.door_history(4)["last_unlocked_user_name"] == "Home Assistant"
+
+
+@pytest.mark.parametrize(("event_id", "refresh"), [("5000", True), ("5336", False)])
+def test_panel_fault_event_rereads_system_alerts(event_id: str, refresh: bool) -> None:
+    """A panel fault event queues a CMD_STATUS_PANEL read; others do not."""
+    coordinator = MagicMock(spec=SpcFlexCCoordinator)
+    coordinator.state = SpcState()
+
+    SpcFlexCCoordinator._handle_flexc_event(coordinator, {"EV_ID": event_id})
+
+    assert coordinator._schedule_panel_status_refresh.called is refresh
+
+
+def test_panel_status_refresh_only_with_system_alerts_and_one_at_a_time() -> None:
+    coordinator = MagicMock()
+    coordinator.state = SpcState()
+    coordinator._panel_status_unsupported = False
+    coordinator._panel_status_refresh_task = None
+
+    SpcFlexCCoordinator._schedule_panel_status_refresh(coordinator)
+    coordinator.hass.async_create_background_task.assert_not_called()
+
+    coordinator.state.system_alerts = {"mains_fault": object()}
+    running = MagicMock()
+    running.done.return_value = False
+    coordinator.hass.async_create_background_task.return_value = running
+    SpcFlexCCoordinator._schedule_panel_status_refresh(coordinator)
+    SpcFlexCCoordinator._schedule_panel_status_refresh(coordinator)
+    assert coordinator.hass.async_create_background_task.call_count == 1
+    coordinator.hass.async_create_background_task.call_args.args[0].close()
+
+    coordinator._panel_status_refresh_task = None
+    coordinator._panel_status_unsupported = True
+    SpcFlexCCoordinator._schedule_panel_status_refresh(coordinator)
+    assert coordinator.hass.async_create_background_task.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_panel_status_refresh_reads_and_publishes() -> None:
+    coordinator = _coordinator_stub()
+
+    await SpcFlexCCoordinator._async_refresh_panel_status(coordinator)
+
+    coordinator._async_read_panel_status_locked.assert_awaited_once()
+    coordinator.async_set_updated_data.assert_called_once_with(coordinator.state)
+
+    coordinator.async_set_updated_data.reset_mock()
+    coordinator._async_read_panel_status_locked.side_effect = FlexCConnectionError(
+        "gone"
+    )
+    await SpcFlexCCoordinator._async_refresh_panel_status(coordinator)
+    coordinator.async_set_updated_data.assert_not_called()

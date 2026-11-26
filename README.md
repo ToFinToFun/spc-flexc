@@ -693,7 +693,12 @@ Diagnostic sensors on the panel device:
   PSU, fuses, bell, cabinet, aux and antenna tamper, RF jamming, fail to
   communicate, X-BUS cable, code tamper, Ethernet link, network fault), from
   `CMD_STATUS_PANEL`. Attributes show whether the alert is inhibited or
-  isolated and whether that is allowed.
+  isolated and whether that is allowed. They have the panel's current state
+  from start-up, are read every minute, and are read again at once when the
+  panel sends a mains, battery or tamper event. On these panels there is no
+  separate *Mains fault*, *Battery fault* or *Panel tamper* sensor; a panel
+  that does not answer `CMD_STATUS_PANEL` gets those three instead, set by
+  FlexC events only.
 - **Ethernet** connectivity, with DHCP, IP address, netmask and gateway as
   attributes.
 - **Panel settings**: the panel's system options and timers

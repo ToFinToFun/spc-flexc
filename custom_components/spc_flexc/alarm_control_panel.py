@@ -133,15 +133,24 @@ def _active_blocking_faults(
     """Return known active panel faults that may explain a not-ready area."""
 
     faults = coordinator.data.faults
+    alerts = getattr(coordinator.data, "system_alerts", None) or {}
     active: list[str] = []
 
-    if faults.mains_fault is True:
+    def present(fault_key: str, alert_key: str) -> bool:
+        # The panel's system alert (CMD_STATUS_PANEL) is the current state;
+        # the event-only fault is used on panels without that command.
+        alert = alerts.get(alert_key)
+        if alert is not None:
+            return bool(alert.active)
+        return getattr(faults, fault_key) is True
+
+    if present("mains_fault", "mains_fault"):
         active.append("230 V mains fault")
 
-    if faults.battery_fault is True:
+    if present("battery_fault", "battery_fault"):
         active.append("panel battery fault")
 
-    if faults.panel_tamper is True:
+    if present("panel_tamper", "cabinet_tamper"):
         active.append("panel tamper")
 
     return active

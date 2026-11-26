@@ -1,5 +1,6 @@
 """Tests for SPC FlexC binary sensors."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,6 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from custom_components.spc_flexc.binary_sensor import (
     FAULTS,
     PANEL,
+    PANEL_ALERT_FALLBACK,
     ZONE_ACTIVITY_PULSE_SECONDS,
     SpcAtpFaultSensor,
     SpcBinary,
@@ -373,7 +375,7 @@ async def test_setup_entry_adds_dynamic_binary_sensors_once() -> None:
         MagicMock(), entry, lambda entities: batches.append(list(entities))
     )
 
-    assert len(batches[0]) == len(PANEL) + len(FAULTS) + 1
+    assert len(batches[0]) == len(PANEL) + len(FAULTS) - len(PANEL_ALERT_FALLBACK) + 1
     assert [len(batch) for batch in batches[1:]] == [1, 3, 3]
     assert len(callbacks) == 1
     callbacks[0]()
@@ -439,3 +441,110 @@ def test_zone_logic_input_is_not_boolean(
     sensor, coordinator = _zone_sensor(logic_input=logic_input)
     coordinator.data.zones[1].event_tamper = tamper
     assert sensor.is_on is expected
+
+
+def _alert(active: bool) -> SimpleNamespace:
+    return SimpleNamespace(active=active, alerted=False)
+
+
+@pytest.mark.asyncio
+async def test_panel_faults_use_system_alerts_and_drop_event_entities() -> None:
+    """With CMD_STATUS_PANEL the event-only fault entities are removed."""
+    coordinator = _coordinator()
+    coordinator._panel_status_unsupported = False
+    coordinator.data.system_alerts = {
+        "mains_fault": _alert(False),
+        "battery_fault": _alert(False),
+        "cabinet_tamper": _alert(False),
+    }
+    entry = MagicMock()
+    entry.entry_id = "test"
+    entry.runtime_data = coordinator
+    batches: list[list[object]] = []
+    registry = MagicMock()
+    registry.async_get_entity_id.side_effect = lambda domain, platform, unique_id: (
+        f"binary_sensor.{unique_id}"
+    )
+    with patch(
+        "custom_components.spc_flexc.binary_sensor.er.async_get",
+        return_value=registry,
+    ):
+        await async_setup_entry(
+            MagicMock(), entry, lambda entities: batches.append(list(entities))
+        )
+
+    added_keys = {
+        entity.entity_description.key
+        for batch in batches
+        for entity in batch
+        if isinstance(entity, SpcBinary)
+    }
+    assert not added_keys & set(PANEL_ALERT_FALLBACK)
+    removed = {call.args[0] for call in registry.async_remove.call_args_list}
+    assert removed == {
+        "binary_sensor.test_mains_fault",
+        "binary_sensor.test_battery_fault",
+        "binary_sensor.test_panel_tamper",
+    }
+
+
+@pytest.mark.asyncio
+async def test_panel_faults_fall_back_to_events_without_status_panel() -> None:
+    """A panel without CMD_STATUS_PANEL keeps the event-only fault entities."""
+    coordinator = _coordinator()
+    coordinator._panel_status_unsupported = True
+    entry = MagicMock()
+    entry.entry_id = "test"
+    entry.runtime_data = coordinator
+    callbacks: list[object] = []
+    coordinator.async_add_listener.side_effect = lambda callback: (
+        callbacks.append(callback) or MagicMock()
+    )
+    batches: list[list[object]] = []
+    registry = MagicMock()
+    with patch(
+        "custom_components.spc_flexc.binary_sensor.er.async_get",
+        return_value=registry,
+    ):
+        await async_setup_entry(
+            MagicMock(), entry, lambda entities: batches.append(list(entities))
+        )
+        callbacks[0]()
+
+    added_keys = [
+        entity.entity_description.key
+        for batch in batches
+        for entity in batch
+        if isinstance(entity, SpcBinary)
+        and entity.entity_description.key in PANEL_ALERT_FALLBACK
+    ]
+    assert sorted(added_keys) == sorted(PANEL_ALERT_FALLBACK)
+    registry.async_remove.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_panel_faults_wait_until_status_panel_is_read() -> None:
+    """Nothing is decided before CMD_STATUS_PANEL has been tried."""
+    coordinator = _coordinator()
+    coordinator._panel_status_unsupported = False
+    entry = MagicMock()
+    entry.entry_id = "test"
+    entry.runtime_data = coordinator
+    batches: list[list[object]] = []
+    registry = MagicMock()
+    with patch(
+        "custom_components.spc_flexc.binary_sensor.er.async_get",
+        return_value=registry,
+    ):
+        await async_setup_entry(
+            MagicMock(), entry, lambda entities: batches.append(list(entities))
+        )
+
+    keys = {
+        entity.entity_description.key
+        for batch in batches
+        for entity in batch
+        if isinstance(entity, SpcBinary)
+    }
+    assert not keys & set(PANEL_ALERT_FALLBACK)
+    registry.async_remove.assert_not_called()

@@ -9,9 +9,11 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.const import EntityCategory
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    DOMAIN,
     SPC_ZONE_TYPES,
     XBUS_TAMPER_INHIBIT_MASK,
     XBUS_TAMPER_INPUT_MASK,
@@ -59,6 +61,18 @@ FAULTS = (
         key="xbus_battery_fault", translation_key="xbus_battery_fault"
     ),
 )
+
+
+# Panel faults that FlexC events report, and the system alert of
+# CMD_STATUS_PANEL that reports the same thing. When the panel answers
+# CMD_STATUS_PANEL, the system alert is the only entity for it (it has the
+# current state from start-up); the event-only entity is created only on
+# panels without CMD_STATUS_PANEL.
+PANEL_ALERT_FALLBACK: dict[str, str] = {
+    "mains_fault": "mains_fault",
+    "battery_fault": "battery_fault",
+    "panel_tamper": "cabinet_tamper",
+}
 
 
 class SpcBinary(CoordinatorEntity, BinarySensorEntity):
@@ -616,7 +630,11 @@ async def async_setup_entry(hass, entry, async_add_entities) -> None:
     coordinator: SpcFlexCCoordinator = entry.runtime_data
     async_add_entities(
         [SpcBinary(coordinator, description, "panel") for description in PANEL]
-        + [SpcBinary(coordinator, description, "faults") for description in FAULTS]
+        + [
+            SpcBinary(coordinator, description, "faults")
+            for description in FAULTS
+            if description.key not in PANEL_ALERT_FALLBACK
+        ]
         + [SpcFlexCConnectionSensor(coordinator)]
     )
     known_atps: set[tuple[int, int]] = set()
@@ -625,10 +643,34 @@ async def async_setup_entry(hass, entry, async_add_entities) -> None:
     known_doors: set[int] = set()
     known_system_alerts: set[str] = set()
     ethernet_added = False
+    panel_faults_resolved: set[str] = set()
+
+    def resolve_panel_faults(entities: list[BinarySensorEntity]) -> None:
+        """Use the system alert where the panel has it, else the event entity."""
+        alerts = coordinator.data.system_alerts
+        unsupported = getattr(coordinator, "_panel_status_unsupported", False) is True
+        if not alerts and not unsupported:
+            return  # CMD_STATUS_PANEL not read yet
+        registry = er.async_get(hass)
+        for description in FAULTS:
+            key = description.key
+            alert_key = PANEL_ALERT_FALLBACK.get(key)
+            if alert_key is None or key in panel_faults_resolved:
+                continue
+            panel_faults_resolved.add(key)
+            if alert_key in alerts:
+                entity_id = registry.async_get_entity_id(
+                    "binary_sensor", DOMAIN, f"{entry.entry_id}_{key}"
+                )
+                if entity_id is not None:
+                    registry.async_remove(entity_id)
+            else:
+                entities.append(SpcBinary(coordinator, description, "faults"))
 
     def add_panel_status_entities() -> None:
         nonlocal ethernet_added
         entities: list[BinarySensorEntity] = []
+        resolve_panel_faults(entities)
         for alert in SYSTEM_ALERTS:
             if (
                 alert.key in coordinator.data.system_alerts

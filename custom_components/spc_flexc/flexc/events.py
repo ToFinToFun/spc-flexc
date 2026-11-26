@@ -10,6 +10,10 @@ from typing import Any
 
 from ..models import FaultState, XBusDeviceState
 
+# Panel fault events whose current state CMD_STATUS_PANEL also reports; on
+# these the system alerts are read again at once.
+PANEL_ALERT_EVENT_IDS = frozenset({5000, 5001, 5006, 5007, 5206, 5207})
+
 EVENT_STATE_MAP: dict[int, tuple[str, bool]] = {
     # Panel power.
     5000: ("mains_fault", True),

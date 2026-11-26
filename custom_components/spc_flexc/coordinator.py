@@ -60,6 +60,7 @@ from .flexc.discovery import (
     async_discover_zones,
 )
 from .flexc.events import (
+    PANEL_ALERT_EVENT_IDS,
     apply_area_event,
     apply_area_intrusion_event,
     apply_event,
@@ -1592,6 +1593,34 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
             return
         self.state.system_alerts = status.alerts
         self.state.ethernet = status.ethernet
+
+    def _schedule_panel_status_refresh(self) -> None:
+        """Read the system alerts again soon after a panel fault event.
+
+        The system alert entities follow CMD_STATUS_PANEL, which is otherwise
+        read once a minute. Only one read is queued at a time.
+        """
+        if not self.state.system_alerts or getattr(
+            self, "_panel_status_unsupported", False
+        ):
+            return
+        task = getattr(self, "_panel_status_refresh_task", None)
+        if task is not None and not task.done():
+            return
+        self._panel_status_refresh_task = self.hass.async_create_background_task(
+            self._async_refresh_panel_status(),
+            f"{DOMAIN} panel status after fault event",
+        )
+
+    async def _async_refresh_panel_status(self) -> None:
+        """Read CMD_STATUS_PANEL now and publish the new state."""
+        try:
+            async with self._client_operation_lock:
+                await self._async_read_panel_status_locked()
+        except Exception as err:  # noqa: BLE001 - best effort, polled again later
+            _LOGGER.debug("Panel status read after fault event failed: %s", err)
+            return
+        self.async_set_updated_data(self.state)
 
     async def async_read_log(
         self, kind: str, object_id: int | None = None, sub_id: int | None = None
@@ -3133,6 +3162,8 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
                 self._tamper_store.async_delay_save(
                     lambda: {"panel_tamper": panel_tamper}, 1
                 )
+        if event_id in PANEL_ALERT_EVENT_IDS:
+            self._schedule_panel_status_refresh()
         panel_changed = apply_panel_event(self.state.panel, event)
         history_changed = SpcFlexCCoordinator._apply_area_history_event(self, event)
         # Ignore duplicate/out-of-order mode events; preserve the current mode.

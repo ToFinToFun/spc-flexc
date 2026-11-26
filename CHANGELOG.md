@@ -8,6 +8,27 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.3] - 2026-11-26
+
+### Changed
+
+- One entity per panel fault. When the panel answers `CMD_STATUS_PANEL`, the
+  system alert sensors (`binary_sensor.spc_system_alert_mains_fault`,
+  `_battery_fault`, `_cabinet_tamper`) are the only ones for mains, battery
+  and cabinet tamper; they have the current state from start-up. The
+  event-only *Mains fault*, *Battery fault* and *Panel tamper* sensors, which
+  stayed *Unknown* until an event arrived, are removed from the entity
+  registry. Panels without `CMD_STATUS_PANEL` keep them.
+- A mains, battery or panel tamper event (5000/5001, 5006/5007, 5206/5207)
+  reads `CMD_STATUS_PANEL` again at once instead of waiting for the next
+  minute.
+- The not-ready reason when arming reads the same faults from the system
+  alerts.
+
+**Upgrading from minimicro34/ha-spc-flexc:** `binary_sensor.*_mains_fault`,
+`*_battery_fault` and `*_panel_tamper` disappear on panels that answer
+`CMD_STATUS_PANEL`; use the system alert sensors instead.
+
 ## [2.0.0-beta.2] - 2026-11-26
 
 Brings in every code change from upstream
