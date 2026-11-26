@@ -1643,3 +1643,55 @@ async def test_panel_status_refresh_reads_and_publishes() -> None:
     )
     await SpcFlexCCoordinator._async_refresh_panel_status(coordinator)
     coordinator.async_set_updated_data.assert_not_called()
+
+
+def _status_reader(error: Exception) -> SpcFlexCCoordinator:
+    coordinator = object.__new__(SpcFlexCCoordinator)
+    coordinator.state = SpcState()
+    coordinator.client = MagicMock()
+    coordinator.client.session_generation = 1
+    coordinator.client.command_username = "user"
+    coordinator.client.command_password = "pass"
+    coordinator.client.async_send_flexml = AsyncMock(side_effect=error)
+    return coordinator
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("code", ["17", "65", "103"])
+async def test_status_panel_unsupported_only_for_this_session(code: str) -> None:
+    """An explicit "not available" reply stops the read until the next session."""
+    from custom_components.spc_flexc.flexc.flexml import FlexMLReplyError
+
+    coordinator = _status_reader(FlexMLReplyError("no", code=code))
+    await coordinator._async_read_panel_status_locked()
+    await coordinator._async_read_panel_status_locked()
+    assert coordinator._panel_status_unsupported is True
+    assert coordinator.client.async_send_flexml.await_count == 1
+
+    coordinator.client.session_generation = 2
+    assert coordinator._panel_status_unsupported is False
+    await coordinator._async_read_panel_status_locked()
+    assert coordinator.client.async_send_flexml.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_status_panel_other_reply_errors_do_not_stop_the_read() -> None:
+    from custom_components.spc_flexc.flexc.flexml import FlexMLError, FlexMLReplyError
+
+    for error in (
+        FlexMLError("REPLY_STATUS_PANEL not found"),
+        FlexMLReplyError("bad parameter", code="12"),
+    ):
+        coordinator = _status_reader(error)
+        await coordinator._async_read_panel_status_locked()
+        await coordinator._async_read_panel_status_locked()
+        assert coordinator._panel_status_unsupported is False
+        assert coordinator.client.async_send_flexml.await_count == 2
+
+
+def test_status_panel_unsupported_can_be_cleared() -> None:
+    coordinator = _status_reader(Exception())
+    coordinator._panel_status_unsupported = True
+    assert coordinator._panel_status_unsupported is True
+    coordinator._panel_status_unsupported = False
+    assert coordinator._panel_status_unsupported is False

@@ -91,6 +91,7 @@ from .flexc.panel_control import (
 from .flexc.panel_status import (
     SYSTEM_ALERTS,
     build_status_panel_command,
+    is_status_panel_unsupported,
     parse_status_panel,
 )
 from .flexc.profiles import (
@@ -1570,6 +1571,18 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
             await self._async_read_calendars_locked(force=True)
         self.async_set_updated_data(self.state)
 
+    @property
+    def _panel_status_unsupported(self) -> bool:
+        """True when CMD_STATUS_PANEL answered "not available" in this session."""
+        generation = getattr(self, "_panel_status_unsupported_generation", None)
+        return generation is not None and generation == self.client.session_generation
+
+    @_panel_status_unsupported.setter
+    def _panel_status_unsupported(self, value: bool) -> None:
+        self._panel_status_unsupported_generation = (
+            self.client.session_generation if value else None
+        )
+
     async def _async_read_panel_status_locked(self) -> None:
         """Read CMD_STATUS_PANEL (system alerts, Ethernet); best effort.
 
@@ -1588,8 +1601,15 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
             )
             status = parse_status_panel(response)
         except FlexMLError as err:
-            _LOGGER.info("CMD_STATUS_PANEL not available, skipping it: %s", err)
-            self._panel_status_unsupported = True
+            if is_status_panel_unsupported(err):
+                _LOGGER.info(
+                    "CMD_STATUS_PANEL not available, skipping it until the next "
+                    "FlexC session: %s",
+                    err,
+                )
+                self._panel_status_unsupported = True
+            else:
+                _LOGGER.debug("Ignoring unreadable CMD_STATUS_PANEL reply: %s", err)
             return
         self.state.system_alerts = status.alerts
         self.state.ethernet = status.ethernet

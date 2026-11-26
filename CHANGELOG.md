@@ -8,6 +8,19 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.7] - 2026-11-26
+
+### Fixed
+
+- `CMD_STATUS_PANEL` is only turned off when the panel answers that it is not
+  available or not permitted (`RESULT` 17, 65 or 103), and only until the next
+  FlexC session. Before, any unreadable reply turned the system alerts off
+  until Home Assistant restarted. `FlexMLReplyError` keeps the reply's code.
+- Long replies: the acknowledgement count is reset with the reply buffer at
+  command start, command cleanup and when the panel opens a new connection,
+  and a DATA part received again is not counted or appended twice. Same fixes
+  as offered upstream in minimicro34/ha-spc-flexc#20 and #21.
+
 ## [2.0.0-beta.6] - 2026-11-26
 
 ### Changed

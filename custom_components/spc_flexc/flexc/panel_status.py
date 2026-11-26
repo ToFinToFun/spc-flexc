@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 
 from .flexml import (
     FlexMLError,
+    FlexMLReplyError,
     _build_command_envelope,
     _parse_reply_root,
     _validate_reply,
@@ -47,6 +48,19 @@ SYSTEM_ALERTS: tuple[SystemAlertInfo, ...] = (
     SystemAlertInfo(37, 23, "ethernet_link"),
     SystemAlertInfo(38, 24, "network_fault"),
 )
+
+
+# RESULT codes that mean this panel or command profile does not offer
+# CMD_STATUS_PANEL: 17 not available on this panel, 65 not ticked in the
+# ATS's command profile, 103 unknown command.
+STATUS_PANEL_UNSUPPORTED_CODES = frozenset({"17", "65", "103"})
+
+
+def is_status_panel_unsupported(err: Exception) -> bool:
+    """Return True for an explicit unsupported or not-permitted reply."""
+    return (
+        isinstance(err, FlexMLReplyError) and err.code in STATUS_PANEL_UNSUPPORTED_CODES
+    )
 
 
 @dataclass(frozen=True)
