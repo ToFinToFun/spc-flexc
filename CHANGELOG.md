@@ -8,7 +8,31 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
-## [2.0.0-beta.1] - Unreleased
+## [2.0.0-beta.2] - 2026-11-26
+
+Brings in every code change from upstream
+[minimicro34/ha-spc-flexc](https://github.com/minimicro34/ha-spc-flexc)
+v1.1.5 to v1.1.9, with their tests. Thanks to minimicro34, and to @psyclan for
+the key-derived IV investigation.
+
+### Fixed
+
+- Panels that use a key-derived AES IV (seen on SPC4300 firmware 3.12.0) now
+  connect: the IV is chosen after SHA-1 validation of an incoming frame and
+  reused for the session; the historical IV stays the default (upstream 1.1.6).
+- Home Assistant 2026.12 `DeviceInfo` deprecation: the parent device is set as
+  a dataclass attribute where supported, with the dictionary form kept for
+  older versions (upstream 1.1.9).
+- PIR slow-read warnings are not raised during the first 30 seconds of zone
+  polling; the readings are still kept in the diagnostic history, now with the
+  log level used (upstream 1.1.7 and 1.1.8).
+
+### Changed
+
+- SPC FlexC Card 1.2.12: the PIR diagnostics list shows the log level of each
+  slow read.
+
+## [2.0.0-beta.1] - 2026-11-26
 
 ### Fixed
 

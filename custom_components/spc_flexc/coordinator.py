@@ -2630,6 +2630,7 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
         """Poll zones without allowing one malformed reply to stop live updates."""
         _LOGGER.debug("SPC zone polling started")
         previous_poll_started: float | None = None
+        poll_loop_started = asyncio.get_running_loop().time()
         try:
             while True:
                 await asyncio.sleep(
@@ -2698,6 +2699,13 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
                         round(interval_ms, 1) if interval_ms is not None else None
                     )
                     level = slow_read_log_level(read_ms)
+                    in_startup_grace = (
+                        _pir_slow_poll_log_level(clock.time() - poll_loop_started)
+                        == logging.DEBUG
+                    )
+                    if level is not None and in_startup_grace:
+                        # Keep slow-read history, but avoid startup-only warnings.
+                        level = logging.DEBUG
                     if level is not None:
                         burst = self.pir_slow_reads.record(
                             read_ms,
@@ -2705,6 +2713,8 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
                             lock_wait_ms=lock_wait_ms,
                             resync_wait_ms=resync_wait_total_ms,
                             batches=batch_timings,
+                            log_level=level,
+                            startup_grace=in_startup_grace,
                         )
                         _LOGGER.log(
                             level,
@@ -2716,7 +2726,7 @@ class SpcFlexCCoordinator(DataUpdateCoordinator[SpcState]):
                             resync_wait_total_ms,
                             batch_timings,
                         )
-                        if burst is not None:
+                        if burst is not None and not in_startup_grace:
                             _LOGGER.warning(
                                 "FlexC PIR repeated slow reads: count=%d "
                                 "window_seconds=60 max_read_ms=%.1f",
