@@ -48,11 +48,6 @@
     }
   },
   "entity": {
-    "lock": {
-      "door_lock": {
-        "name": "Door {door_id} {door_name} – Lock"
-      }
-    },
     "binary_sensor": {
       "xbus_tamper_fault": {
         "name": "Tamper fault"

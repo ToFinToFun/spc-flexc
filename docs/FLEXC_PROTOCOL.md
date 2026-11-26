@@ -753,7 +753,7 @@ in `custom_components/spc_flexc/sensor.py`.
 | Panel | `PANEL_SUMMARY`, events 7003/7004 | Device info (model, firmware); panel `alarm_control_panel`; panel sensor; engineer mode binary sensor; FlexC connection binary sensor; optional last event ID diagnostic sensor |
 | Area | `AREA_STATUS`, events 35xx and 1000/1001 | `alarm_control_panel` per area (arm/disarm via `CMD_AREA_CHANGE_MODE`) |
 | Zone | `ZONE_STATUS`, zone events | Binary sensor per zone plus tamper/trouble diagnostics; inhibition and isolation switches and a restore button via `CMD_ZONE_CONTROL` |
-| Door | `DOOR_STATUS`, `DOOR_CONFIG`, events 30xx | Door status sensor; door mode sensor (`normal`/`blocked`/`unlocked`, also set by events 3007–3009); Door open binary sensor (`DPS_INPUT`, also set by events 3010/3011); Entry granted binary sensor (event 3000 for `GRANTED_TIME`); lock entity (lock = action 7, unlock = 6, open = 5); buttons Momentary open, Unlock, Normal and Block (`CMD_DOOR_CONTROL` 5–8), unavailable when the matching `*_ALLOWED` flag is `0` |
+| Door | `DOOR_STATUS`, `DOOR_CONFIG`, events 30xx | Door status sensor; door mode sensor (`normal`/`blocked`/`unlocked`, also set by events 3007–3009); Door open binary sensor (`DPS_INPUT`, also set by events 3010/3011); Entry granted binary sensor (event 3000 for `GRANTED_TIME`); buttons Momentary open, Unlock, Normal and Block (`CMD_DOOR_CONTROL` 5–8), unavailable when the matching `*_ALLOWED` flag is `0` |
 | Every event | `EVENT` | `spc_flexc_event` on the event bus and in the logbook |
 | Mapping Gate | `MG_STATUS` | Switch via `CMD_MG_CONTROL` |
 | X-BUS device | `STATUS_XBUS`, events 531x | Tamper fault, inhibition and isolation binary sensors; aux voltage, aux current, diagnostic and inventory sensors |

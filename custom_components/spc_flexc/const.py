@@ -10,7 +10,6 @@ PLATFORMS = (
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
     Platform.CALENDAR,
-    Platform.LOCK,
     Platform.SENSOR,
     Platform.SWITCH,
 )

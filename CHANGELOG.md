@@ -8,6 +8,22 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.8] - 2026-11-26
+
+### Removed
+
+- The door **lock** entity (off by default). It repeated three of the four door
+  buttons and mixed the door's mode with its position: Normal and Blocked both
+  showed as locked, Entry granted as unlocked, and *open* meant Momentary.
+  Existing lock entities are removed from the entity registry at setup. The
+  door buttons (Normal, Unlocked, Momentary, Blocked), the door mode sensor and
+  the door open sensor are unchanged.
+
+### Changed
+
+- README: door actions use the panel's names, and the door's mode and position
+  are described as separate (Unlocked does not mean open).
+
 ## [2.0.0-beta.7] - 2026-11-26
 
 ### Fixed

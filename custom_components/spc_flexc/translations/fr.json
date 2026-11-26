@@ -392,11 +392,6 @@
         "name": "Mapping gate {mg_id} {mg_name}"
       }
     },
-    "lock": {
-      "door_lock": {
-        "name": "Porte {door_id} {door_name} – Serrure"
-      }
-    },
     "alarm_control_panel": {
       "area": {
         "name": "Secteur {area_id} {area_name}"

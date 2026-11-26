@@ -502,11 +502,6 @@
         "name": "Område {area_id} {area_name}"
       }
     },
-    "lock": {
-      "door_lock": {
-        "name": "Dörr {door_id} {door_name} – Lås"
-      }
-    },
     "calendar": {
       "calendar": {
         "name": "Kalender {calendar_id} {calendar_name}"

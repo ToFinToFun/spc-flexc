@@ -41,6 +41,7 @@ async def async_setup_entry(
     except Exception:
         _LOGGER.exception("Could not register SPC FlexC dashboard card")
 
+    _remove_door_lock_entities(hass, entry)
     coordinator = SpcFlexCMappingGateCoordinator(hass, entry)
     await coordinator.async_restore_panel_tamper()
     await coordinator.async_restore_area_history()
@@ -180,6 +181,20 @@ async def async_setup_entry(
     coordinator.async_start_background_discovery()
 
     return True
+
+
+def _remove_door_lock_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove the door lock entities of versions before 2.0.0-beta.8.
+
+    The lock repeated three of the door buttons and mixed the door's mode with
+    its position; the buttons, the door mode sensor and the door open sensor
+    remain.
+    """
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain == "lock":
+            _LOGGER.info("Removing door lock entity %s", entity.entity_id)
+            registry.async_remove(entity.entity_id)
 
 
 async def async_unload_entry(

@@ -502,11 +502,6 @@
         "name": "Area {area_id} {area_name}"
       }
     },
-    "lock": {
-      "door_lock": {
-        "name": "Door {door_id} {door_name} – Lock"
-      }
-    },
     "calendar": {
       "calendar": {
         "name": "Calendar {calendar_id} {calendar_name}"

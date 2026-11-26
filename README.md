@@ -156,17 +156,15 @@ choice always wins. The idea is from Henrik Ekblad's
 - Home Assistant switch entities for discovered Mapping Gates
 - Resulting output state verification after commands
 - Door status monitoring for discovered access-control doors
-- Validated door actions: temporary open, permanent open/free access, normal mode and forced lock
+- Validated door actions, with the panel's names: Momentary, Unlocked, Normal and Blocked.
+  The door's mode (Normal, Unlocked, Blocked) and its position (open/closed) are kept
+  apart: Unlocked does not mean open
 - Persistent door-mode verification and bounded timeout recovery
 - Door contact binary sensor (open/closed) from the door position input (DPS), updated
   at once by door events
 - **Entry granted** binary sensor per door: on while the lock relay is
   energised after Entry Granted (event 3000), for the door's `GRANTED_TIME`
 - Door buttons are unavailable when the panel reports the action as not allowed
-- A **lock** entity per door: *lock* sets Door Normal (locked, cards work),
-  *unlock* sets Door Unlocked (free access), *open* opens momentarily. It shows
-  unlocked in mode Unlocked and while Entry granted is on, and open while the
-  door contact is open. Mode Locked (no access) stays a button.
 
 ### Home Assistant
 
@@ -834,7 +832,7 @@ Global Full Set coordinates individual area operations. All areas are prechecked
 
 ### Door-control timeout recovery
 
-Door actions 6 (permanent open/free access), 7 (normal mode) and 8 (forced lock) have persistent, verifiable target modes. After a control timeout, SPC FlexC recovers the FlexC session and reads the current door status before deciding whether any replay is safe.
+Door actions 6 (Unlocked), 7 (Normal) and 8 (Blocked) have persistent, verifiable target modes. After a control timeout, SPC FlexC recovers the FlexC session and reads the current door status before deciding whether any replay is safe.
 
 If the requested mode is already reported, the timed-out command is treated as applied and is not repeated. If the fresh status reports another known persistent mode, the control is retried once and the final mode is verified. If the resulting mode is unknown or ambiguous, the command is not replayed.
 
