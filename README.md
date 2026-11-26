@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" alt="SPC FlexC" width="200"></p>
+
 # SPC FlexC
 
 > Native Siemens / Vanderbilt / Comelit SPC alarm integration for Home Assistant using the FlexC protocol.
