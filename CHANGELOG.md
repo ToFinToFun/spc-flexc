@@ -8,6 +8,25 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.4] - 2026-11-26
+
+### Changed
+
+- Zone device class: the zone type decides only when it says what the
+  detector is (fire, glass break, water, ...). Otherwise a word in the zone
+  name (English, Swedish, French, also cut at 16 characters) decides, so a door
+  contact or window of type *Alarm* is no longer shown as motion. Without a
+  word, Alarm zones stay motion and Entry/Exit zones opening. Idea from
+  henrikekblad/spc-flexc-home-assistant.
+- Zone type 29 is CO (carbon monoxide, device class CO), not CO2; types 12
+  (*Unused*) and 17 (*Seismic*, device class vibration) added. The
+  `spc_zone_type` attribute says `co` instead of `co2`.
+
+### Added
+
+- [docs/panel-setup.md](docs/panel-setup.md): step-by-step panel setup with
+  screenshots, adapted from Henrik Ekblad's guide (MIT licensed).
+
 ## [2.0.0-beta.3] - 2026-11-26
 
 ### Changed

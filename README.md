@@ -114,6 +114,28 @@ It implements a native FlexC receiver directly inside Home Assistant. The SPC pa
 - Individual zone binary sensor attributes `intrusion_active` (currently active intrusion) and `intrusion_triggered` (latched until disarming)
 - Zone inhibition and de-inhibition controls when explicitly allowed by SPC
 - Zone isolation and de-isolation controls when explicitly allowed by SPC
+
+**How a zone is shown (door, window, motion, ...).** The panel's zone type
+(*Sektionstyp*: Alarm, Entry/Exit, Fire, ...) is the zone's alarm function,
+not the kind of detector: a door contact and a PIR are both *Alarm*, and the
+panel stores nothing else about the detector, wired or wireless. So:
+
+1. a type that says what the zone is decides: Fire (smoke), Emergency exit
+   (door), Tamper, Detector/hold-up/warning fault (problem), Seismic and Glass
+   break (vibration), Water (moisture), Heat, Gas, CO;
+2. otherwise a word in the zone name, in English, Swedish or French, also
+   when the panel has cut the name at 16 characters: *PIR, motion, rörelse,
+   mouvement* (motion), *glass, glaskross* (vibration), *window, fönst,
+   fenêtre* (window), *garage door, garageport, porte de garage* (garage
+   door), *door, gate, dörr, port, grind, porte, portail* (door), *smoke, rök,
+   fumée* (smoke), *water, leak, vatten, läck, fuite* (moisture), *tamper,
+   sabotage* (tamper);
+3. otherwise Alarm and Exit terminator zones are shown as motion and
+   Entry/Exit zones as opening.
+
+If the guess is wrong, set **Show as** on the entity in Home Assistant; that
+choice always wins. The idea is from Henrik Ekblad's
+[spc-flexc-home-assistant](https://github.com/henrikekblad/spc-flexc-home-assistant/blob/main/docs/zones.md).
 - Zone restoration through a dedicated Home Assistant button when SPC reports `RESTORE_ALLOWED=1`
 - Dynamic creation of supported Home Assistant control entities
 
@@ -249,18 +271,18 @@ Copy `custom_components/spc_flexc` to `/config/custom_components/spc_flexc` and 
 
 ## SPC configuration
 
-### FlexC communication path
+**Step-by-step guide with screenshots: [docs/panel-setup.md](docs/panel-setup.md)**
+(based on Henrik Ekblad's guide, MIT licensed). In short:
 
-Configure an SPC ATS / ATP using FlexC. The SPC panel initiates the TCP connection to Home Assistant, which acts as the FlexC receiver.
+- a FlexC **command profile** with its own command user and password (the login
+  Home Assistant uses), and the commands Home Assistant may send ticked;
+- an **event profile** with every event type reported;
+- a FlexC **ATS / ATP** pointing at Home Assistant's IP address and TCP port
+  (default `52000`), with a nonzero SPT account code;
+- **Fixed Encryption** with the same 64-character hex key as in Home Assistant.
 
-Configure the ATP destination with:
-
-- the Home Assistant IP address;
-- the TCP port configured in SPC FlexC;
-- FlexC encryption enabled;
-- the same AES-256 encryption key configured in Home Assistant.
-
-Make sure the destination is reachable, the TCP port is not blocked and the ATS / ATP is enabled.\n\nStarting with **v1.1.5-beta.13**, an ATP client account set to `0` (automatic assignment) receives a nonzero account identifier in the FlexC CONNECT acknowledgement, following the behavior observed in the decompiled SPCLink receiver. Explicit nonzero ATP accounts are preserved. **This behavior still requires live validation on an SPC4300**; if the connection drops before the first POLL, use an explicit nonzero ATP account as a temporary workaround.
+The panel opens the TCP connection to Home Assistant, which acts as the FlexC
+receiver, so Home Assistant must be reachable from the panel on that port.
 
 ### Command Profile
 

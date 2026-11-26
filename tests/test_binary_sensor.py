@@ -115,12 +115,50 @@ def test_zone_device_classes() -> None:
         24: BinarySensorDeviceClass.MOISTURE,
         25: BinarySensorDeviceClass.HEAT,
         27: BinarySensorDeviceClass.GAS,
-        29: BinarySensorDeviceClass.GAS,
+        29: BinarySensorDeviceClass.CO,
+        17: BinarySensorDeviceClass.VIBRATION,
     }
     for zone_type, device_class in expected.items():
         assert zone_device_class(zone_type) == device_class
     assert zone_device_class(9) is None
     assert zone_device_class(None) is None
+
+
+@pytest.mark.parametrize(
+    ("zone_type", "name", "expected"),
+    [
+        # Alarm and entry/exit zones: the name says what the detector is.
+        (0, "Laundry Door", BinarySensorDeviceClass.DOOR),
+        (0, "Dörr Köket", BinarySensorDeviceClass.DOOR),
+        (0, "Entredörr", BinarySensorDeviceClass.DOOR),
+        (0, "Badrumsfönster", BinarySensorDeviceClass.WINDOW),
+        (0, "Vardagsrumsfönst", BinarySensorDeviceClass.WINDOW),  # cut at 16
+        (0, "Fenêtre salon", BinarySensorDeviceClass.WINDOW),
+        (1, "Garageport", BinarySensorDeviceClass.GARAGE_DOOR),
+        (1, "Porte entrée", BinarySensorDeviceClass.DOOR),
+        (1, "Portail", BinarySensorDeviceClass.DOOR),
+        (1, "Hall PIR", BinarySensorDeviceClass.MOTION),
+        (0, "Glaskross vardagsrum", BinarySensorDeviceClass.VIBRATION),
+        (0, "Läckage disk", BinarySensorDeviceClass.MOISTURE),
+        # "Inglasning" (glazed porch) is not glass break; the door word wins.
+        (0, "Dörr Inglasning", BinarySensorDeviceClass.DOOR),
+        # No word: the usual detector for the alarm function.
+        (0, "Bike shed", BinarySensorDeviceClass.MOTION),
+        (1, "Hallway", BinarySensorDeviceClass.OPENING),
+        (9, "Boiler", None),
+        (None, "Kitchen Door", BinarySensorDeviceClass.DOOR),
+        # A type that says what it is wins over the name.
+        (3, "Fire door", BinarySensorDeviceClass.SMOKE),
+        (24, "Window", BinarySensorDeviceClass.MOISTURE),
+        # Words inside other words do not count for short stems.
+        (1, "Transport", BinarySensorDeviceClass.OPENING),
+        (1, "Spire", BinarySensorDeviceClass.OPENING),
+    ],
+)
+def test_zone_device_class_from_name(
+    zone_type: int | None, name: str, expected: BinarySensorDeviceClass | None
+) -> None:
+    assert zone_device_class(zone_type, name) == expected
 
 
 def test_zone_state_attributes_availability_and_parent_device() -> None:

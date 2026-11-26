@@ -1,6 +1,7 @@
 """Binary sensor entities for the SPC FlexC integration."""
 
 import asyncio
+import re
 from datetime import UTC, datetime
 
 from homeassistant.components.binary_sensor import (
@@ -154,29 +155,90 @@ class SpcFlexCConnectionSensor(
         )
 
 
-def zone_device_class(zone_type: int | None) -> BinarySensorDeviceClass | None:
-    """Return the Home Assistant device class for an SPC zone type."""
-    if zone_type in (0, 2):
-        return BinarySensorDeviceClass.MOTION
-    if zone_type in (1, 30):
-        return BinarySensorDeviceClass.OPENING
-    if zone_type == 3:
-        return BinarySensorDeviceClass.SMOKE
-    if zone_type == 4:
-        return BinarySensorDeviceClass.DOOR
-    if zone_type == 8:
-        return BinarySensorDeviceClass.TAMPER
-    if zone_type in (15, 19, 20):
-        return BinarySensorDeviceClass.PROBLEM
-    if zone_type == 23:
-        return BinarySensorDeviceClass.VIBRATION
-    if zone_type == 24:
-        return BinarySensorDeviceClass.MOISTURE
-    if zone_type == 25:
-        return BinarySensorDeviceClass.HEAT
-    if zone_type in (27, 29):
-        return BinarySensorDeviceClass.GAS
-    return None
+# Zone types that say what the detector is.
+_ZONE_TYPE_DEVICE_CLASS: dict[int, BinarySensorDeviceClass] = {
+    3: BinarySensorDeviceClass.SMOKE,  # fire
+    4: BinarySensorDeviceClass.DOOR,  # emergency exit
+    8: BinarySensorDeviceClass.TAMPER,
+    15: BinarySensorDeviceClass.PROBLEM,  # detector fault
+    17: BinarySensorDeviceClass.VIBRATION,  # seismic
+    19: BinarySensorDeviceClass.PROBLEM,  # hold-up fault
+    20: BinarySensorDeviceClass.PROBLEM,  # warning fault
+    23: BinarySensorDeviceClass.VIBRATION,  # glass break
+    24: BinarySensorDeviceClass.MOISTURE,  # water
+    25: BinarySensorDeviceClass.HEAT,
+    27: BinarySensorDeviceClass.GAS,
+    29: BinarySensorDeviceClass.CO,
+}
+
+# Otherwise a zone type is the alarm function (alarm, entry/exit, ...), not
+# the kind of detector, so the zone name is tried first: English, Swedish and
+# French words, as stems because the panel cuts names at 16 characters
+# ("Vardagsrumsfönst"). The first match wins. Idea and English words from
+# henrikekblad/spc-flexc-home-assistant (docs/zones.md).
+_ZONE_NAME_DEVICE_CLASS: tuple[tuple[re.Pattern[str], BinarySensorDeviceClass], ...] = (
+    (
+        re.compile(r"\bpir\b|motion|rörelse|mouvement", re.IGNORECASE),
+        BinarySensorDeviceClass.MOTION,
+    ),
+    (
+        re.compile(r"glass|glaskross|bris de glace", re.IGNORECASE),
+        BinarySensorDeviceClass.VIBRATION,
+    ),
+    (
+        re.compile(r"window|fönst|fenêtre|fenetre", re.IGNORECASE),
+        BinarySensorDeviceClass.WINDOW,
+    ),
+    (
+        re.compile(r"garage ?door|garageport|porte (de )?garage", re.IGNORECASE),
+        BinarySensorDeviceClass.GARAGE_DOOR,
+    ),
+    (
+        re.compile(r"door|gate|dörr|\bport\b|grind|\bporte\b|portail", re.IGNORECASE),
+        BinarySensorDeviceClass.DOOR,
+    ),
+    (
+        re.compile(r"smoke|\brök|fumée|fumee", re.IGNORECASE),
+        BinarySensorDeviceClass.SMOKE,
+    ),
+    (
+        re.compile(r"water|leak|vatten|läck|fuite", re.IGNORECASE),
+        BinarySensorDeviceClass.MOISTURE,
+    ),
+    (
+        re.compile(r"tamper|sabotage|autoprotection", re.IGNORECASE),
+        BinarySensorDeviceClass.TAMPER,
+    ),
+)
+
+# Without a type or a word that says it: what the alarm function usually is.
+_ZONE_TYPE_FALLBACK: dict[int, BinarySensorDeviceClass] = {
+    0: BinarySensorDeviceClass.MOTION,  # alarm
+    1: BinarySensorDeviceClass.OPENING,  # entry/exit
+    2: BinarySensorDeviceClass.MOTION,  # exit terminator
+    30: BinarySensorDeviceClass.OPENING,  # entry/exit 2
+}
+
+
+def zone_device_class(
+    zone_type: int | None, name: str | None = None
+) -> BinarySensorDeviceClass | None:
+    """Return the Home Assistant device class for an SPC zone.
+
+    The zone type decides when it says what the detector is (fire, glass
+    break, water, ...). Otherwise a word in the zone name decides, and
+    otherwise the usual detector for the zone's alarm function. A device
+    class the user sets in Home Assistant always wins over this.
+    """
+    if zone_type in _ZONE_TYPE_DEVICE_CLASS:
+        return _ZONE_TYPE_DEVICE_CLASS[zone_type]
+    if name:
+        for pattern, device_class in _ZONE_NAME_DEVICE_CLASS:
+            if pattern.search(name):
+                return device_class
+    if zone_type is None:
+        return None
+    return _ZONE_TYPE_FALLBACK.get(zone_type)
 
 
 class SpcZoneDiagnosticBinarySensor(
@@ -237,7 +299,7 @@ class SpcZoneBinarySensor(CoordinatorEntity[SpcFlexCCoordinator], BinarySensorEn
         self._activity_pulse_handle: asyncio.TimerHandle | None = None
         self._last_actuations: int | None = None
         zone = coordinator.data.zones[zone_id]
-        self._attr_device_class = zone_device_class(zone.zone_type)
+        self._attr_device_class = zone_device_class(zone.zone_type, zone.name)
         self._attr_translation_key = "zone"
         self._attr_translation_placeholders = zone_placeholders(zone_id, zone)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zone_{zone_id}_motion"
