@@ -777,7 +777,7 @@
         },
         "doors": {
           "name": "Portes",
-          "description": "Réglages par numéro de porte, ex. {\"3\": \"0\"} ; null retire la porte du profil. La signification des valeurs n'est pas encore connue."
+          "description": "Réglages par numéro de porte (voir l'exemple) ; null retire la porte du profil. La signification des valeurs n'est pas encore connue."
         }
       }
     },

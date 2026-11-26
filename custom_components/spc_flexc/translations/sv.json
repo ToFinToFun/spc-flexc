@@ -882,7 +882,7 @@
         },
         "doors": {
           "name": "Dörrar",
-          "description": "Dörrinställningar per dörrnummer, t.ex. {\"3\": \"0\"}; null tar bort dörren ur profilen. Värdenas betydelse är inte kartlagd än."
+          "description": "Dörrinställningar per dörrnummer (se exemplet); null tar bort dörren ur profilen. Värdenas betydelse är inte kartlagd än."
         }
       }
     },

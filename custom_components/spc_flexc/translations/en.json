@@ -882,7 +882,7 @@
         },
         "doors": {
           "name": "Doors",
-          "description": "Door settings by door number, e.g. {\"3\": \"0\"}; null removes the door from the profile. The meaning of the values is not mapped yet."
+          "description": "Door settings by door number (see the example); null removes the door from the profile. The meaning of the values is not mapped yet."
         }
       }
     },
