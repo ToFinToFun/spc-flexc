@@ -220,7 +220,7 @@ def test_fire_panel_event_adds_description() -> None:
     async_fire_panel_event(hass, "entry", {"EV_ID": "3010", "DOOR_ID": "3"}, UTC)
     name, data = hass.bus.async_fire.call_args.args
     assert name == EVENT_SPC_FLEXC
-    assert data["description"] == "Door opened"
+    assert data["description"] == "Door Open"
     assert data["panel_time"] is None
 
 

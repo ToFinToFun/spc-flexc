@@ -43,6 +43,8 @@ It implements a native FlexC receiver directly inside Home Assistant. The SPC pa
 
 - [Features](#features)
 - [Protocol reference](docs/FLEXC_PROTOCOL.md)
+- [Event table: all 608 FlexC events](docs/EVENT_TABLE.md)
+- [Panel setup with screenshots](docs/panel-setup.md)
 - [Status: tested hardware, verified and untested functions, roadmap](docs/STATUS.md)
 - [Tested on](#tested-on)
 - [Supported systems](#supported-systems)

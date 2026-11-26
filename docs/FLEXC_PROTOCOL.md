@@ -663,6 +663,9 @@ over EDP, by inhibiting each alert); it is not the alert's ID.
 
 ## Unsolicited events
 
+The names, address types, SIA and Contact ID codes of all 608 event IDs, as
+the panel lists them, are in [EVENT_TABLE.md](EVENT_TABLE.md).
+
 The panel pushes `EVENT` records with an `EV_ID` and, depending on the event,
 `AREA_ID`, `ZONE_ID` or `DOOR_ID`. The integration keeps only these numeric
 identifiers. It does not store or log other event fields, because they can

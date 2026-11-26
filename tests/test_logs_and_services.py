@@ -197,7 +197,7 @@ def test_active_alerts_sensor() -> None:
     coordinator.data.alerts = [{"event_id": 3006, "state": 1}]
     assert sensor.native_value == 1
     assert sensor.extra_state_attributes["alerts"] == [
-        {"event_id": 3006, "state": 1, "description": "Door forced"}
+        {"event_id": 3006, "state": 1, "description": "Door Forced Open"}
     ]
 
 

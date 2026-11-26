@@ -8,6 +8,24 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.5] - 2026-11-26
+
+### Changed
+
+- Event names come from the panel's own complete event table: all 608 FlexC
+  events, in Swedish when Home Assistant runs in Swedish and otherwise in
+  English (`flexc/event_table.py`). This replaces 67 hand-written English
+  descriptions, so several names change to the panel's wording (for example
+  *Door Forced Open*, *Zone input open*, *Two Way Wireless Panic Alarm*).
+  The panel's own event text (`EV_DESC`) is still shown first when an event
+  carries it.
+
+### Added
+
+- [docs/EVENT_TABLE.md](docs/EVENT_TABLE.md): every event ID with its English
+  and Swedish name, address type, SIA and Contact ID code, read from an
+  SPC4300 with firmware 3.14.1.
+
 ## [2.0.0-beta.4] - 2026-11-26
 
 ### Changed

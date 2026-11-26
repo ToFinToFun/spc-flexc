@@ -1,41 +1,34 @@
-"""Regression tests for SPC door event diagnostic descriptions."""
+"""Door events carry the panel's own names (from its complete event table)."""
 
-import ast
-from pathlib import Path
+from custom_components.spc_flexc.flexc.event_table import (
+    EVENT_TABLE,
+    event_description,
+)
+from custom_components.spc_flexc.sensor import FLEXC_EVENT_DESCRIPTIONS
 
 
-def test_door_event_descriptions_cover_spc_table():
-    """All door event IDs 3000-3016 have the expected English labels."""
-    source = Path("custom_components/spc_flexc/sensor.py").read_text(encoding="utf-8")
-    module = ast.parse(source)
-    mapping = next(
-        node.value
-        for node in module.body
-        if isinstance(node, ast.AnnAssign)
-        and isinstance(node.target, ast.Name)
-        and node.target.id == "FLEXC_EVENT_DESCRIPTIONS"
-    )
-    labels = {
-        ast.literal_eval(key): ast.literal_eval(value)
-        for key, value in zip(mapping.keys, mapping.values, strict=True)
-    }
+def test_door_event_names_are_the_panels_own() -> None:
+    """Door events 3000-3016, as the SPC4300 lists them (firmware 3.14.1)."""
     expected = {
-        3000: "Entry granted",
-        3001: "Entry denied",
-        3002: "Exit granted",
-        3003: "Exit denied",
-        3004: "Door open too long",
-        3005: "Door left open",
-        3006: "Door forced",
-        3007: "Door normal",
-        3008: "Door locked (access denied)",
-        3009: "Door unlocked (free access)",
-        3010: "Door opened",
-        3011: "Door closed",
-        3012: "Door release (DRS)",
-        3013: "Door alarm restored",
-        3014: "Unknown card",
-        3015: "Reader locked",
-        3016: "Reader unlocked",
+        3000: ("Entry Granted", "Inpassage godkänd"),
+        3001: ("Entry Denied", None),
+        3006: ("Door Forced Open", None),
+        3010: ("Door Open", None),
+        3011: ("Door Closed", None),
+        3012: ("Door Release", None),
+        3014: ("Unknown card", None),
     }
-    assert {event_id: labels[event_id] for event_id in range(3000, 3017)} == expected
+    for event_id, (english, swedish) in expected.items():
+        assert event_description(event_id, "en") == english
+        assert FLEXC_EVENT_DESCRIPTIONS[event_id] == english
+        if swedish is not None:
+            assert event_description(event_id, "sv") == swedish
+    assert all(event_id in EVENT_TABLE for event_id in range(3000, 3017))
+
+
+def test_event_table_language_and_unknown_ids() -> None:
+    assert event_description(None) is None
+    assert event_description(99999, "sv") is None
+    assert event_description(3502, "sv-SE") == "Deltillkoppling A"
+    assert event_description(3502, "fr") == "Partset A"
+    assert len(EVENT_TABLE) == 608

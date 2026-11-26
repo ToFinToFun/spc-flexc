@@ -13,6 +13,8 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
+from .flexc.event_table import event_description
+
 EVENT_SPC_FLEXC = "spc_flexc_event"
 
 # Panel EVENT attribute -> event data key, and how the value is converted.
@@ -76,12 +78,8 @@ def async_fire_panel_event(
     timezone: tzinfo,
 ) -> dict[str, Any]:
     """Fire ``spc_flexc_event`` for one panel EVENT record; return its data."""
-    from .sensor import FLEXC_EVENT_DESCRIPTIONS
-
     event_id = _int_or_none(event.get("EV_ID"))
-    description = (
-        FLEXC_EVENT_DESCRIPTIONS.get(event_id) if event_id is not None else None
-    )
+    description = event_description(event_id, hass.config.language)
     data = build_event_data(entry_id, event, description, timezone)
     hass.bus.async_fire(EVENT_SPC_FLEXC, data)
     return data
