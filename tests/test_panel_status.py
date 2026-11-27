@@ -61,6 +61,19 @@ def test_parse_status_panel_without_masks_or_errors() -> None:
         parse_status_panel('<FLEXML_REPLY VER="1.0"></FLEXML_REPLY>')
 
 
+@pytest.mark.parametrize("mask", ["-1", "100000000"])
+def test_out_of_range_mask_is_unknown(mask: str) -> None:
+    status = parse_status_panel(STATUS.replace('INPUT="00000001"', f'INPUT="{mask}"'))
+    assert status.alerts == {}
+
+
+def test_allowed_flag_other_than_0_or_1_is_unknown() -> None:
+    status = parse_status_panel(
+        STATUS.replace('INHIBIT_ALLOWED_1="1"', 'INHIBIT_ALLOWED_1="yes"')
+    )
+    assert status.alerts["mains_fault"].inhibit_allowed is None
+
+
 def test_system_alert_bits_are_unique() -> None:
     assert len({alert.bit for alert in SYSTEM_ALERTS}) == len(SYSTEM_ALERTS)
     assert len({alert.key for alert in SYSTEM_ALERTS}) == len(SYSTEM_ALERTS)

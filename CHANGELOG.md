@@ -8,6 +8,29 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.9] - 2026-11-27
+
+Brings in what upstream v1.1.10 adds beyond our own two contributions
+(#20, #21, already here since 2.0.0-beta.7). Thanks to minimicro34.
+
+### Added
+
+- Italian translation, from upstream (contributed there for community
+  review): the texts whose English original is the same here. The other
+  texts show in English.
+
+### Fixed
+
+- `CMD_STATUS_PANEL`: a mask outside 32 bits, or an `*_ALLOWED` flag other
+  than `0` or `1`, is treated as unknown instead of being read (upstream
+  1.1.10).
+
+### Not taken
+
+- Upstream's *Panel status diagnostics* sensor and its card section: every
+  system alert is already its own entity here, with the panel's own name,
+  and the Ethernet link is its own binary sensor, so they would be shown twice.
+
 ## [2.0.0-beta.8] - 2026-11-26
 
 ### Removed

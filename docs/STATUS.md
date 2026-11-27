@@ -132,8 +132,10 @@ global ID (`0` = local); not confirmed.
    Devices Require Relearning*.
 6. Detector type of wireless zones (*Magnetic contact*, *Smoke detector*, *PIR*):
    the panel's web page shows it, but no FlexC command reports it so far.
-7. Upstream: offer the protocol fixes (handshake account echo, chunked reply
-   acknowledgement) to [minimicro34/ha-spc-flexc](https://github.com/minimicro34/ha-spc-flexc).
+7. Upstream: the long-reply acknowledgement and the `CMD_STATUS_PANEL` fault
+   read are merged in [minimicro34/ha-spc-flexc](https://github.com/minimicro34/ha-spc-flexc)
+   v1.1.10 (#20, #21); the panel logs are offered in #25, the door and access
+   information next.
 
 Not planned without a backup and great care, because they can switch FlexC
 off or disrupt the panel: deleting ATS/ATP/profiles, replacing the FlexC
