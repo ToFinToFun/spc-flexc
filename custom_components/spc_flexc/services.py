@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import weakref
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
@@ -20,7 +22,7 @@ from homeassistant.helpers.service import async_register_admin_service
 from .const import DOMAIN
 from .flexc.calendars import DAYS, SpcCalendarException, parse_periods
 from .flexc.connection import FlexCError
-from .flexc.flexml import FlexMLError
+from .flexc.flexml import FlexMLError, FlexMLReplyError
 from .flexc.logs import LOG_KINDS
 from .flexc.users import CARD_FLAGS, spc_date, validity_dates
 from .flexc.zone_config import (
@@ -106,6 +108,18 @@ def _coordinator(
     return entries[0].runtime_data
 
 
+# RESULT 65: the command is not ticked in the ATS's Command Profile.
+RESULT_NOT_PERMITTED = "65"
+# Undecoded panel fields: kept inside the integration (the activity log tells
+# entries apart with RAW), never returned by the action.
+_UNDECODED_FIELDS = ("raw", "data")
+# One log read from the action at a time per panel; a second call fails at once
+# instead of queueing behind the first and holding up polling.
+_LOG_READ_LOCKS: weakref.WeakKeyDictionary[Any, asyncio.Lock] = (
+    weakref.WeakKeyDictionary()
+)
+
+
 async def _async_get_log(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     kind: str = call.data[ATTR_LOG]
     object_id: int | None = call.data.get(ATTR_ID)
@@ -117,22 +131,44 @@ async def _async_get_log(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
             translation_placeholders={"log": kind},
         )
     coordinator = _coordinator(hass, call)
+    lock = _LOG_READ_LOCKS.setdefault(coordinator, asyncio.Lock())
+    if lock.locked():
+        raise HomeAssistantError(
+            translation_domain=DOMAIN, translation_key="log_read_busy"
+        )
     try:
-        if log.sub_id_attribute is not None:
-            records = await coordinator.async_read_log(
-                kind, object_id, call.data.get(ATTR_ATP, 1)
-            )
-        else:
-            records = await coordinator.async_read_log(
-                kind, object_id if log.id_attribute is not None else None
-            )
+        async with lock:
+            if log.sub_id_attribute is not None:
+                records = await coordinator.async_read_log(
+                    kind, object_id, call.data.get(ATTR_ATP, 1)
+                )
+            else:
+                records = await coordinator.async_read_log(
+                    kind, object_id if log.id_attribute is not None else None
+                )
+    except FlexMLReplyError as err:
+        if err.code == RESULT_NOT_PERMITTED:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="log_not_permitted",
+                translation_placeholders={"log": kind, "command": log.command},
+            ) from err
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="log_read_failed",
+            translation_placeholders={"log": kind, "error": str(err)},
+        ) from err
     except (FlexCError, FlexMLError) as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="log_read_failed",
             translation_placeholders={"log": kind, "error": str(err)},
         ) from err
-    entries: list[Any] = records[: call.data[ATTR_LIMIT]]
+    # The panel always sends the whole log; the limit only shortens the result.
+    entries: list[Any] = [
+        {k: v for k, v in record.items() if k not in _UNDECODED_FIELDS}
+        for record in records[: call.data[ATTR_LIMIT]]
+    ]
     return {
         "log": kind,
         "count": len(entries),
@@ -771,7 +807,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
     async def get_log(call: ServiceCall) -> ServiceResponse:
         return await _async_get_log(hass, call)
 
-    hass.services.async_register(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_GET_LOG,
         get_log,

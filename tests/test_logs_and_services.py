@@ -221,3 +221,90 @@ def test_result_codes_are_described() -> None:
         "(not allowed for this login or command profile)"
     )
     assert describe_result("999") == "RESULT='999'"
+
+
+@pytest.mark.asyncio
+async def test_get_log_service_does_not_return_undecoded_fields() -> None:
+    coordinator = MagicMock()
+    coordinator.async_read_log = AsyncMock(
+        return_value=[{"time": None, "text": "x", "raw": "076F", "data": "AB"}]
+    )
+    result = await _async_get_log(_hass_with_entry(coordinator), _call(log="system"))
+    assert result["entries"] == [{"time": None, "text": "x"}]
+
+
+@pytest.mark.asyncio
+async def test_get_log_service_command_not_permitted() -> None:
+    coordinator = MagicMock()
+    coordinator.async_read_log = AsyncMock(
+        side_effect=FlexMLReplyError("refused", code="65")
+    )
+    hass = _hass_with_entry(coordinator)
+    with pytest.raises(HomeAssistantError) as err:
+        await _async_get_log(hass, _call(log="system"))
+    assert err.value.translation_key == "log_not_permitted"
+    assert err.value.translation_placeholders["command"] == "GET_SYSTEM_LOG"
+    coordinator.async_read_log.side_effect = FlexMLReplyError("bad", code="102")
+    with pytest.raises(HomeAssistantError) as err:
+        await _async_get_log(hass, _call(log="system"))
+    assert err.value.translation_key == "log_read_failed"
+
+
+@pytest.mark.asyncio
+async def test_get_log_service_one_read_at_a_time() -> None:
+    import asyncio
+
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def slow_read(*_args):
+        started.set()
+        await release.wait()
+        return []
+
+    coordinator = MagicMock()
+    coordinator.async_read_log = slow_read
+    hass = _hass_with_entry(coordinator)
+    first = asyncio.ensure_future(_async_get_log(hass, _call(log="system")))
+    await started.wait()
+    with pytest.raises(HomeAssistantError) as err:
+        await _async_get_log(hass, _call(log="system"))
+    assert err.value.translation_key == "log_read_busy"
+    release.set()
+    assert (await first)["count"] == 0
+    # Free again once the first read has finished.
+    assert (await _async_get_log(hass, _call(log="system")))["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_get_log_is_for_administrators_only(hass, hass_read_only_user) -> None:
+    from homeassistant.core import Context
+    from homeassistant.exceptions import Unauthorized
+
+    from custom_components.spc_flexc.const import DOMAIN
+    from custom_components.spc_flexc.services import async_setup_services
+
+    async_setup_services(hass)
+    user = hass_read_only_user
+    assert not user.is_admin
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(
+            DOMAIN,
+            "get_log",
+            {"log": "system"},
+            blocking=True,
+            return_response=True,
+            context=Context(user_id=user.id),
+        )
+
+
+async def test_get_log_runs_without_a_user_for_automations(hass) -> None:
+    from custom_components.spc_flexc.const import DOMAIN
+    from custom_components.spc_flexc.services import async_setup_services
+
+    async_setup_services(hass)
+    # Past the admin check: fails only because no panel is loaded.
+    with pytest.raises(ServiceValidationError, match="no_loaded_entry"):
+        await hass.services.async_call(
+            DOMAIN, "get_log", {"log": "system"}, blocking=True, return_response=True
+        )

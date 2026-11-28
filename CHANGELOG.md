@@ -8,6 +8,30 @@ This repository starts from
 v1.1.5-beta.17. For the history before that, see the
 [upstream changelog](https://github.com/minimicro34/ha-spc-flexc/blob/main/CHANGELOG.md).
 
+## [2.0.0-beta.10] - 2026-11-28
+
+The same changes to `spc_flexc.get_log` as offered upstream in
+minimicro34/ha-spc-flexc#25 after review.
+
+### Changed
+
+- `spc_flexc.get_log` is for Home Assistant administrators only. Automations
+  (no user) can still call it. The SPC page in the sidebar was already
+  administrators only.
+- The action no longer returns undecoded panel fields (`raw` in the system
+  log, `data` in the ATP log). The integration still uses them inside, to tell
+  activity log entries apart.
+- One read from the action at a time per panel: a second call while one is
+  running fails at once with *Another log is being read from this panel*.
+
+### Added
+
+- A clear error when the panel answers RESULT 65: the log command is not
+  ticked in the ATS's Command Profile.
+- README: what the action returns and what was checked (about 2,300 entries on
+  our SPC4300, no card numbers in the texts), that `limit` does not reduce the
+  panel's work, and the time zone assumption.
+
 ## [2.0.0-beta.9] - 2026-11-27
 
 Brings in what upstream v1.1.10 adds beyond our own two contributions

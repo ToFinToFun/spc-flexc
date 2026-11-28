@@ -545,6 +545,12 @@
     "log_read_failed": {
       "message": "Kunde inte läsa loggen {log}: {error}"
     },
+    "log_read_busy": {
+      "message": "En annan logg läses redan från centralen. Försök igen när den är klar."
+    },
+    "log_not_permitted": {
+      "message": "Centralen tillåter inte att {log}-loggen läses: CMD_{command} är inte markerad i ATS:ens kommandoprofil."
+    },
     "panel_command_failed": {
       "message": "Centralen accepterade inte {service}: {error}"
     },
@@ -593,7 +599,7 @@
   "services": {
     "get_log": {
       "name": "Läs centralens logg",
-      "description": "Läser en logg från SPC-centralen och returnerar posterna, nyaste först. Kortnummer returneras aldrig.",
+      "description": "Läser en logg från SPC-centralen och returnerar posterna, nyaste först. Endast för administratörer. Kortdata och okodade fält från centralen returneras inte; centralens texter returneras som de är skrivna. Centralen skickar alltid hela loggen; gränsen kortar bara resultatet.",
       "fields": {
         "config_entry_id": {
           "name": "Central",

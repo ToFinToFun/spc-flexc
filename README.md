@@ -675,16 +675,22 @@ panel's format, periods `start;end` separated by spaces.
 ## Panel logs
 
 The service `spc_flexc.get_log` reads a log from the panel and returns its
-entries, newest first. It only reads; card numbers are never returned.
+entries, newest first. It only reads, and only Home Assistant administrators
+can call it (automations run without a user and can call it too). Card data
+(`CARD_*` in the ATS event log) and undecoded panel fields (`RAW` in the system
+log, `DATA` in the ATP log) are not returned. The panel's own texts are returned
+as written: on our SPC4300 (3.14.1) about 2,300 entries were checked and their
+texts held user numbers and IP addresses, no card numbers. Other panels and
+firmware were not checked.
 
 | `log` | `id` | Entry fields |
 | --- | --- | --- |
 | `access` | door number | `time`, `type`, `type_name`, `detail`, `door_id`, `door_name`, `user_id`, `user_name`, `text` |
-| `system` | — | `time`, `text`, `raw` |
+| `system` | — | `time`, `text` |
 | `zone` | zone number | `time`, `zone_id`, `input`, `resistance` |
 | `ats` | FlexC ATS number | the event fields listed above, with `text` |
 | `ats_network` | FlexC ATS number | `time`, `ats_id`, `message_id`, `text` |
-| `atp` | FlexC ATS number (and `atp`, default 1) | `time`, `ats_id`, `atp`, `message_id`, `data`, `text` |
+| `atp` | FlexC ATS number (and `atp`, default 1) | `time`, `ats_id`, `atp`, `message_id`, `text` |
 | `atp_network` | FlexC ATS number (and `atp`, default 1) | `time`, `ats_id`, `atp`, `message_id`, `text` |
 
 ```yaml
@@ -697,7 +703,12 @@ response_variable: access_log
 ```
 
 On an SPC4300 the access log holds about 900 entries per door and the system
-log 1000; a full read takes about a second.
+log 1000; a full read takes about a second. The panel always sends the whole
+log: `limit` only shortens the result, not the panel's work. One read from the
+action at a time per panel; a second call while one is running fails at once
+instead of queueing. If the panel answers RESULT 65, the log command is not
+ticked in the ATS's Command Profile. Panel times carry no time zone and are read
+in Home Assistant's zone, which assumes the panel clock is set to local time.
 
 ---
 
